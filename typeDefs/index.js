@@ -4,12 +4,16 @@ import feesTypeDef from "./fees.typeDef.js";
 import studentTypeDef from "./student.typeDef.js";
 import attendanceTypeDef from "./attendance.typeDef.js";
 import testPaperTypeDef from "./testPaper.typeDef.js";
+import verificationsTypeDef from "./verifications.typeDef.js";
+import tempStudentsTypeDef from "./tempStudents.typedDef.js";
 
 const mergedTypeDefs = mergeTypeDefs([
   studentTypeDef,
   feesTypeDef,
   attendanceTypeDef,
   testPaperTypeDef,
+  verificationsTypeDef,
+  tempStudentsTypeDef,
 ]);
 
 export default mergedTypeDefs;

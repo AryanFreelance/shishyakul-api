@@ -35,8 +35,6 @@ type Mutation {
         email: String!,
         phone: String,
         grade: String,
-        present: String!,
-        absent: String!,
     ): SuccessResponse
     updateStudent(userId: ID!,
         firstname: String,
@@ -44,9 +42,7 @@ type Mutation {
         lastname: String,
         email: String,
         phone: String,
-        grade: String,
-        present: String,
-        absent: String): Student
+        grade: String,): Student
     deleteStudent(userId: ID!): DeleteResponse
 }
 

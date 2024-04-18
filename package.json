@@ -5,7 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon index.js",
+    "dev": "nodemon index.js",
     "start": "NODE_ENV=production node index.js"
   },
   "keywords": [],
@@ -24,7 +24,8 @@
     "graphql": "^16.8.1",
     "graphql-passport": "^0.6.8",
     "mongoose": "^8.3.1",
-    "passport": "^0.7.0"
+    "passport": "^0.7.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

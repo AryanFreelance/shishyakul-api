@@ -77,40 +77,18 @@ const studentResolver = {
     // },
     createStudent: async (
       _,
-      {
-        userId,
-        firstname,
-        middlename,
-        lastname,
-        email,
-        phone,
-        grade,
-
-        present,
-        absent,
-      }
+      { userId, firstname, middlename, lastname, email, phone, grade }
     ) => {
       let message = {};
-      // const student = {
-      //   userId,
-      //   firstname,
-      //   middlename,
-      //   lastname,
-      //   email,
-      //   phone,
-      //   grade,
-      //   attendance: { present, absent },
-      //   testPaper: [],
-      // };
       await setDoc(doc(db, "students", userId), {
         userId,
         firstname,
-        middlename,
+        middlename: middlename || "",
         lastname,
         email,
-        phone,
-        grade,
-        attendance: { present, absent },
+        phone: phone || "",
+        grade: grade || "",
+        attendance: { present: 0, absent: 0 },
         testPaper: [],
       })
         .then(() => {
