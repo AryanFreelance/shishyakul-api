@@ -35,11 +35,24 @@ const verificationsResolver = {
   Mutation: {
     createVerification: async (_, { studentEmail }) => {
       let message = {};
-      const verification = {
-        verificationCode: uuidv4(),
-        expired: false,
-        studentEmail,
-      };
+
+      //   First fetch the temp student data to check if the verification code is already created for the student, if yes then update the verification code and set expired to false
+      const tempStudent = await getDoc(doc(db, "tempstudents", studentEmail));
+      const tempStudentData = tempStudent.data();
+      let verification = {};
+      if (tempStudentData) {
+        verification = {
+          verificationCode: tempStudentData.verificationCode,
+          expired: false,
+          studentEmail,
+        };
+      } else {
+        verification = {
+          verificationCode: uuidv4(),
+          expired: false,
+          studentEmail,
+        };
+      }
       await setDoc(doc(db, "verifications", verification.verificationCode), {
         ...verification,
       })

@@ -1,5 +1,11 @@
-// import { fees } from "../dummyData/data.js";
-import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "../db/index.js";
 
 const feesResolver = {
@@ -45,6 +51,40 @@ const feesResolver = {
       // await setDoc(doc(db, "fees", fee.userId, ), { ...fee });
       await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee });
       return fee;
+    },
+    deleteFee: async (_, { userId, id }) => {
+      let message = {};
+      await deleteDoc(doc(db, "fees", userId, "fee", id))
+        .then(() => {
+          console.log("Document deleted with ID: ", id);
+          message = {
+            success: true,
+            message: "Document deleted with ID",
+          };
+        })
+        .catch((error) => {
+          console.error("Error deleting document: ", error);
+          message = { success: false, message: "Error deleting document" };
+        });
+
+      return message;
+    },
+    deleteUserFees: async (_, { userId }) => {
+      let message = {};
+      await deleteDoc(doc(db, "fees", userId))
+        .then(() => {
+          console.log("Document deleted with ID: ", userId);
+          message = {
+            success: true,
+            message: "Document deleted with ID",
+          };
+        })
+        .catch((error) => {
+          console.error("Error deleting document: ", error);
+          message = { success: false, message: "Error deleting document" };
+        });
+
+      return message;
     },
   },
 };

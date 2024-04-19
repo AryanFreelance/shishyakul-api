@@ -18,8 +18,14 @@ type Query {
 
 type Mutation {
     createFee(userId: ID!, email: String!, feesPaid: Int!, paidOn: String!, month: String!, year: String!): Fees!
-    updateFee(userId: ID!, feeId: ID!, name: String, fee: Int): Fees!
-    deleteFee(id: ID!): Fees!
+    # updateFee(userId: ID!, feeId: ID!, name: String, fee: Int): Fees!
+    deleteFee(userId: ID!, id: ID!): DeleteFeeResponse!
+    deleteUserFees(userId: ID!): DeleteFeeResponse!
+}
+
+type DeleteFeeResponse {
+    success: Boolean!
+    message: String!
 }
 `;
 

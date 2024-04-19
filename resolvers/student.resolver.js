@@ -87,7 +87,7 @@ const studentResolver = {
         lastname,
         email,
         phone: phone || "",
-        grade: grade || "",
+        grade: grade,
         attendance: { present: 0, absent: 0 },
         testPaper: [],
       })
