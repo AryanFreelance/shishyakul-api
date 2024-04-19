@@ -17,9 +17,12 @@ const verificationsResolver = {
       const verificationsCollection = collection(db, "verifications");
       const verificationsSnapshot = await getDocs(verificationsCollection);
       verificationsSnapshot.forEach((doc) => {
-        console.log(doc.data());
-        verifications.push(doc.data());
+        if (doc.data().expired === false) verifications.push(doc.data());
       });
+      verificationsSnapshot.forEach((doc) => {
+        if (doc.data().expired === true) verifications.push(doc.data());
+      });
+      console.log(verifications);
       return verifications;
     },
     verification: async (_, { verificationCode }) => {
