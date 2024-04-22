@@ -1,5 +1,12 @@
 import { db } from "../db/index.js";
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+} from "firebase/firestore";
 
 const testPaperResolver = {
   Query: {
@@ -42,7 +49,10 @@ const testPaperResolver = {
       await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });
       return testPaper;
     },
-    updateTest: async (_, { id, title, subject, date, totalMarks, url }) => {
+    updateTest: async (
+      _,
+      { id, title, subject, date, totalMarks, url, sharedWith }
+    ) => {
       const prevData = await getDoc(doc(db, "testPapers", id));
       const testPaper = {
         id,
@@ -52,6 +62,7 @@ const testPaperResolver = {
         totalMarks: totalMarks || prevData.data().totalMarks,
         url: url || prevData.data().url,
         createdAt: prevData.data().createdAt,
+        sharedWith: sharedWith || prevData.data().sharedWith,
       };
       console.log(testPaper);
       await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });

@@ -30,12 +30,12 @@ type Mutation {
     createStudent(
         userId: ID!,
         firstname: String!,
-        middlename: String,
+        middlename: String!,
         lastname: String!,
         email: String!,
-        phone: String,
-        grade: String,
-    ): SuccessResponse
+        phone: String!,
+        grade: String!,
+    ): SuccessStudentResponse
     updateStudent(userId: ID!,
         firstname: String,
         middlename: String,
@@ -43,15 +43,15 @@ type Mutation {
         email: String,
         phone: String,
         grade: String,): Student
-    deleteStudent(userId: ID!): DeleteResponse
+    deleteStudent(userId: ID!): DeleteStudentResponse
 }
 
-type SuccessResponse {
+type SuccessStudentResponse {
     success: Boolean!
     message: String!
 }
 
-type DeleteResponse {
+type DeleteStudentResponse {
     success: Boolean!
     message: String!
 }

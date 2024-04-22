@@ -83,11 +83,11 @@ const studentResolver = {
       await setDoc(doc(db, "students", userId), {
         userId,
         firstname,
-        middlename: middlename || "",
+        middlename,
         lastname,
         email,
-        phone: phone || "",
-        grade: grade,
+        phone,
+        grade,
         attendance: { present: 0, absent: 0 },
         testPaper: [],
       })

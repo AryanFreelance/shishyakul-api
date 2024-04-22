@@ -30,6 +30,7 @@ type Mutation {
         date: String,
         totalMarks: Int,
         url: String,
+        sharedWith: [String]
     ): TestPaper
     updateSharedTest(
         id: ID!,
