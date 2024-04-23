@@ -8,17 +8,14 @@ type Student {
     phone: String
     grade: String
     attendance: AttendanceStud
-    testPaper: [SharedTestPaper]
+    testPaper: [String]
     fees: [Fees]
+    testPaperData: [TestPaper]
 }
 
 type AttendanceStud {
     present: Int!
     absent: Int!
-}
-
-type SharedTestPaper {
-    testId: ID!
 }
 
 type Query {

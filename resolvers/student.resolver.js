@@ -175,6 +175,25 @@ const studentResolver = {
         console.log(error);
       }
     },
+    testPaperData: async (parent) => {
+      try {
+        const testPapersData = parent.testPaper;
+        console.log(testPapersData);
+        const testPapersDataPromises = testPapersData.map(
+          async (testPaperId) => {
+            const testPaperData = await getDoc(
+              doc(db, "testPapers", testPaperId)
+            );
+            return testPaperData.data();
+          }
+        );
+        const testPapersDataLog = await Promise.all(testPapersDataPromises);
+        console.log(testPapersDataLog);
+        return testPapersDataLog;
+      } catch (error) {
+        console.log(error);
+      }
+    },
   },
 };
 

@@ -66,6 +66,18 @@ const testPaperResolver = {
       };
       console.log(testPaper);
       await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });
+
+      const studentData = await getDocs(collection(db, "students"));
+      const students = studentData.docs.map((doc) => doc.data());
+      students.forEach(async (student) => {
+        if (student.email.includes(sharedWith)) {
+          const stud = await getDoc(doc(db, "students", student.userId));
+          const studData = stud.data();
+          studData.testPaper.push(testPaper.id);
+          console.log(studData);
+          await setDoc(doc(db, "students", student.userId), { ...studData });
+        }
+      });
       return testPaper;
     },
     updateSharedTest: async (_, { id, sharedWith }) => {
