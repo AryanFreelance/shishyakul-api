@@ -69,15 +69,21 @@ const testPaperResolver = {
 
       const studentData = await getDocs(collection(db, "students"));
       const students = studentData.docs.map((doc) => doc.data());
+      // Update the test paper id in the student's testPaper array if the student's email is in the sharedWith array and if not removed the test paper id from the student's testPaper array
       students.forEach(async (student) => {
-        if (student.email.includes(sharedWith)) {
+        if (sharedWith.includes(student.email)) {
           const stud = await getDoc(doc(db, "students", student.userId));
           const studData = stud.data();
-          studData.testPaper.push(testPaper.id);
+          if (studData.testPaper.includes(testPaper.id)) {
+            console.log("TESTID", testPaper.id);
+          } else {
+            studData.testPaper.push(testPaper.id);
+            await setDoc(doc(db, "students", student.userId), { ...studData });
+          }
           console.log(studData);
-          await setDoc(doc(db, "students", student.userId), { ...studData });
         }
       });
+      console.log("TESTPAPERUPDATE", testPaper);
       return testPaper;
     },
     updateSharedTest: async (_, { id, sharedWith }) => {
@@ -109,6 +115,18 @@ const testPaperResolver = {
     },
     deleteTest: async (_, { id }) => {
       const testPaper = await getDoc(doc(db, "testPapers", id));
+      // Remove the test paper id from all the students who have it
+      const studentData = await getDocs(collection(db, "students"));
+      const students = studentData.docs.map((doc) => doc.data());
+      await students.forEach(async (student) => {
+        const stud = await getDoc(doc(db, "students", student.userId));
+        const studData = stud.data();
+        studData.testPaper = studData.testPaper.filter(
+          (test) => test.testId !== id
+        );
+        console.log(studData);
+        await setDoc(doc(db, "students", student.userId), { ...studData });
+      });
       await deleteDoc(doc(db, "testPapers", id));
       return testPaper.data();
     },
