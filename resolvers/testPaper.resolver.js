@@ -118,13 +118,14 @@ const testPaperResolver = {
       // Remove the test paper id from all the students who have it
       const studentData = await getDocs(collection(db, "students"));
       const students = studentData.docs.map((doc) => doc.data());
-      await students.forEach(async (student) => {
+      students.forEach(async (student) => {
         const stud = await getDoc(doc(db, "students", student.userId));
         const studData = stud.data();
-        studData.testPaper = studData.testPaper.filter(
-          (test) => test.testId !== id
-        );
-        console.log(studData);
+        const index = studData.testPaper.indexOf(id);
+        if (index > -1) {
+          studData.testPaper.splice(index, 1);
+        }
+        console.log("UPDATEDSTUDDATA", studData);
         await setDoc(doc(db, "students", student.userId), { ...studData });
       });
       await deleteDoc(doc(db, "testPapers", id));
