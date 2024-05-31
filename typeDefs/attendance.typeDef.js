@@ -9,12 +9,9 @@ const attendanceTypeDef = `#graphql
     attendance(timestamp: String!): Attendance
   }
   type Mutation {
-    createAttendance(present: [ID]!, absent: [ID]!): SuccessResponse
-    updateAttendance(timestamp: ID!, totalPresent: Int, totalAbsent: Int, present: [ID], absent: [ID]): Attendance!
-  }
-  type SuccessResponse {
-      success: Boolean!
-      message: String!
+    createAttendance(timestamp: ID!, present: [ID]!, absent: [ID]!): String
+    updateAttendance(timestamp: ID!, present: [ID], absent: [ID]): String
+    resetAttendance: String
   }
 `;
 

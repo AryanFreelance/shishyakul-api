@@ -2,7 +2,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
   setDoc,
 } from "firebase/firestore";
@@ -19,12 +18,6 @@ const feesResolver = {
         fees.push(doc.data());
       });
       return fees;
-    },
-    fee: (_, { id }) => {
-      return fees.find((fee) => fee.createdAt === id);
-    },
-    studFees: (_, { userId }) => {
-      return fees.filter((fee) => fee.userId === userId);
     },
   },
   Mutation: {
@@ -48,43 +41,27 @@ const feesResolver = {
         createdAt: new Date().toLocaleString(),
       };
       console.log(fee);
-      // await setDoc(doc(db, "fees", fee.userId, ), { ...fee });
-      await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee });
-      return fee;
+      await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee })
+        .then(() => {
+          console.log("Document written with ID: ", fee.id);
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+          return "ERROR";
+        });
+      return "SUCCESS";
     },
     deleteFee: async (_, { userId, id }) => {
-      let message = {};
       await deleteDoc(doc(db, "fees", userId, "fee", id))
         .then(() => {
           console.log("Document deleted with ID: ", id);
-          message = {
-            success: true,
-            message: "Document deleted with ID",
-          };
         })
         .catch((error) => {
           console.error("Error deleting document: ", error);
-          message = { success: false, message: "Error deleting document" };
+          return "ERROR";
         });
 
-      return message;
-    },
-    deleteUserFees: async (_, { userId }) => {
-      let message = {};
-      await deleteDoc(doc(db, "fees", userId))
-        .then(() => {
-          console.log("Document deleted with ID: ", userId);
-          message = {
-            success: true,
-            message: "Document deleted with ID",
-          };
-        })
-        .catch((error) => {
-          console.error("Error deleting document: ", error);
-          message = { success: false, message: "Error deleting document" };
-        });
-
-      return message;
+      return "SUCCESS";
     },
   },
 };

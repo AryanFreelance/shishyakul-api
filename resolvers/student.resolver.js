@@ -1,4 +1,5 @@
-import { db } from "../db/index.js";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../db/index.js";
 import {
   collection,
   deleteDoc,
@@ -7,6 +8,7 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 
 const studentResolver = {
   Query: {
@@ -14,9 +16,12 @@ const studentResolver = {
       const students = [];
       const studentsCollection = collection(db, "students");
       const studentsSnapshot = await getDocs(studentsCollection);
+      // Return the students in ascending order of their grades
       studentsSnapshot.forEach((doc) => {
-        console.log(doc.data());
         students.push(doc.data());
+      });
+      students.sort((a, b) => {
+        return a.grade - b.grade;
       });
       return students;
     },
@@ -26,81 +31,123 @@ const studentResolver = {
     },
   },
   Mutation: {
-    // createStudent: async (
-    //   _,
-    //   {
-    //     userId,
-    //     firstname,
-    //     middlename,
-    //     lastname,
-    //     email,
-    //     phone,
-    //     grade,
-    //     present,
-    //     absent,
-    //   }
-    // ) => {
-    //   let message = {};
-    //   const student = {
-    //     userId,
-    //     firstname,
-    //     middlename,
-    //     lastname,
-    //     email,
-    //     phone,
-    //     grade,
-    //     attendance: { present, absent },
-    //     testPaper: [],
-    //   };
-    //   const validData = {
-    //     userId: student.userId,
-    //     firstname: student.firstname,
-    //     middlename: student.middlename,
-    //     lastname: student.lastname,
-    //     email: student.email,
-    //     phone: student.phone,
-    //     grade: student.grade,
-    //     attendance: student.attendance,
-    //     testPaper: student.testPaper,
-    //   };
-    //   await setDoc(doc(db, "students", userId), { ...validData })
-    //     .then(() => {
-    //       console.log("Document written with ID: ", userId);
-    //       message = { success: true, message: "Document written with ID" };
-    //     })
-    //     .catch((error) => {
-    //       console.error("Error adding document: ", error);
-    //       message = { success: false, message: "Error adding document" };
-    //     });
+    initializeStudent: async (_, { email }) => {
+      // Create Verification Code
+      const tempStudent = await getDoc(doc(db, "tempstudents", email));
+      const tempStudentData = tempStudent.data();
+      let verification = {};
+      if (tempStudentData) {
+        verification = {
+          verificationCode: tempStudentData.verificationCode,
+          studentEmail: email,
+        };
+      } else {
+        verification = {
+          verificationCode: uuidv4(),
+          studentEmail: email,
+        };
+      }
+      await setDoc(doc(db, "verifications", verification.verificationCode), {
+        ...verification,
+      })
+        .then(() => {
+          console.log(
+            "Document written with ID: ",
+            verification.verificationCode
+          );
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+          return "ERROR";
+        });
 
-    //   return message;
-    // },
+      console.log(verification);
+
+      // Add TempStudent
+      const tempstudent = {
+        email,
+        verificationCode: verification.verificationCode,
+      };
+      await setDoc(doc(db, "tempstudents", tempstudent.email), {
+        ...tempstudent,
+      })
+        .then(() => {
+          console.log("Document written with ID: ", tempstudent.email);
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+          return "ERROR";
+        });
+
+      console.log(tempstudent);
+
+      // Return the Verification Code if successful
+      return verification.verificationCode.toString();
+    },
     createStudent: async (
       _,
-      { userId, firstname, middlename, lastname, email, phone, grade }
-    ) => {
-      let message = {};
-      await setDoc(doc(db, "students", userId), {
-        userId,
+      {
         firstname,
         middlename,
         lastname,
         email,
+        password,
         phone,
         grade,
-        attendance: { present: 0, absent: 0 },
-        testPaper: [],
-      })
-        .then(() => {
-          console.log("Document written with ID: ", userId);
-          message = { success: true, message: "Document written with ID" };
+        verificationCode,
+      }
+    ) => {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+          console.log("USERCREDS", userCredential);
+          const userId = userCredential.user.uid;
+
+          // Create Student
+          await setDoc(doc(db, "students", userId), {
+            userId,
+            firstname,
+            middlename,
+            lastname,
+            email,
+            phone,
+            grade,
+            attendance: { present: 0, absent: 0 },
+          })
+            .then(() => {
+              console.log("Document written with ID: ", userId);
+            })
+            .catch((error) => {
+              console.error("Error adding document: ", error);
+              message = false;
+              return "ERROR";
+            });
+
+          // Delete TempStudent
+          await deleteDoc(doc(db, "tempstudents", email))
+            .then(() => {
+              console.log("Document deleted with ID: ", email);
+            })
+            .catch((error) => {
+              console.error("Error deleting document: ", error);
+              return "ERROR";
+            });
+
+          // Delete Verification
+          await deleteDoc(doc(db, "verifications", verificationCode))
+            .then(() => {
+              console.log("Document deleted with ID: ", verificationCode);
+            })
+            .catch((error) => {
+              console.error("Error deleting document: ", error);
+              return "ERROR";
+            });
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
-          message = { success: false, message: "Error adding document" };
+          console.log(error);
+          return "ERROR";
         });
 
-      return message;
+      return "SUCCESS";
     },
     updateStudent: async (
       _,
@@ -109,55 +156,65 @@ const studentResolver = {
         firstname,
         middlename,
         lastname,
-        email,
         phone,
         grade,
-        present,
-        absent,
+        studentInformation,
+        guardianInformation,
+        siblingInformation,
       }
     ) => {
-      const previousStudent = await getDoc(doc(db, "students", userId));
-      const { ...rest } = previousStudent.data();
-      const student = {
+      const studentDetails = await getDoc(doc(db, "students", userId)).catch(
+        (error) => {
+          console.error("Error getting document: ", error);
+          return "ERROR";
+        }
+      );
+      const updatedStudent = {
         userId,
-        firstname: firstname ? firstname : rest.firstname,
-        middlename: middlename ? middlename : rest.middlename,
-        lastname: lastname ? lastname : rest.lastname,
-        email: email ? email : rest.email,
-        phone: phone ? phone : rest.phone,
-        grade: grade ? grade : rest.grade,
+        firstname: firstname,
+        middlename: middlename,
+        lastname: lastname,
+        email: studentDetails.data().email,
+        phone: phone,
+        grade: grade,
         attendance: {
-          present: present ? present : rest.attendance.present,
-          absent: absent ? absent : rest.attendance.absent,
+          present: studentDetails.data().attendance.present,
+          absent: studentDetails.data().attendance.absent,
         },
+        studentInformation: studentInformation,
+        guardianInformation: guardianInformation,
+        siblingInformation: siblingInformation,
       };
-      let data;
 
-      await setDoc(doc(db, "students", userId), { ...student })
-        .then(() => {
-          data = student;
-        })
-        .catch(() => {
-          data = { success: false, message: "Error adding document" };
-        });
+      console.log("UPDATEDSTUDENT", updatedStudent);
 
-      return data;
+      await setDoc(doc(db, "students", userId), { ...updatedStudent }).catch(
+        (error) => {
+          console.error("Error adding document: ", error);
+          return "ERROR";
+        }
+      );
+
+      return "SUCCESS";
     },
     deleteStudent: async (_, { userId }) => {
-      let message = {};
-      await deleteDoc(doc(db, "students", userId))
-        .then(() => {
-          console.log("Document successfully deleted!");
-          message = {
-            success: true,
-            message: "Document successfully deleted!",
-          };
+      await deleteDoc(doc(db, "students", userId)).catch((error) => {
+        console.error("Error removing document: ", error);
+        return "ERROR";
+      });
+
+      await getDocs(collection(db, "fees", userId, "fee"))
+        .then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            deleteDoc(doc.ref);
+          });
         })
         .catch((error) => {
           console.error("Error removing document: ", error);
-          message = { success: false, message: "Error removing document" };
+          return "ERROR";
         });
-      return message;
+
+      return "SUCCESS";
     },
   },
   Student: {
@@ -171,25 +228,6 @@ const studentResolver = {
           studentFees.push(doc.data());
         });
         return studentFees;
-      } catch (error) {
-        console.log(error);
-      }
-    },
-    testPaperData: async (parent) => {
-      try {
-        const testPapersData = parent.testPaper;
-        console.log(testPapersData);
-        const testPapersDataPromises = testPapersData.map(
-          async (testPaperId) => {
-            const testPaperData = await getDoc(
-              doc(db, "testPapers", testPaperId)
-            );
-            return testPaperData.data();
-          }
-        );
-        const testPapersDataLog = await Promise.all(testPapersDataPromises);
-        console.log(testPapersDataLog);
-        return testPapersDataLog;
       } catch (error) {
         console.log(error);
       }

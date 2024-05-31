@@ -7,15 +7,16 @@ type Student {
     email: String!
     phone: String
     grade: String
-    attendance: AttendanceStud
-    testPaper: [String]
+    attendance: StudentAttendance
+    studentInformation: StudentInformation
+    guardianInformation: GuardianInformation
+    siblingInformation: [SiblingInformation]
     fees: [Fees]
-    testPaperData: [TestPaper]
 }
 
-type AttendanceStud {
-    present: Int!
-    absent: Int!
+type StudentAttendance {
+    present: Int
+    absent: Int
 }
 
 type Query {
@@ -24,33 +25,102 @@ type Query {
 }
 
 type Mutation {
+    initializeStudent(
+        email: String!
+    ): String!
     createStudent(
-        userId: ID!,
         firstname: String!,
         middlename: String!,
         lastname: String!,
         email: String!,
+        password: String!,
         phone: String!,
-        grade: String!,
-    ): SuccessStudentResponse
-    updateStudent(userId: ID!,
+        grade: String!
+        verificationCode: String!
+    ): String!
+    updateStudent(
+        userId: ID!,
         firstname: String,
         middlename: String,
         lastname: String,
-        email: String,
         phone: String,
-        grade: String,): Student
-    deleteStudent(userId: ID!): DeleteStudentResponse
+        grade: String
+        studentInformation: StudentInformationInput
+        guardianInformation: GuardianInformationInput
+        siblingInformation: [SiblingInformationInput]
+    ): String!
+    deleteStudent(userId: ID!): String!
 }
 
-type SuccessStudentResponse {
-    success: Boolean!
-    message: String!
+type StudentInformation {
+    dob: String
+    age: Int
+    gender: String
+    adhaar: String
+    address: String
+    school: String
+    board: String
+    medium: String
 }
 
-type DeleteStudentResponse {
-    success: Boolean!
-    message: String!
+type GuardianInformation {
+    motherFirstName: String
+    motherMiddleName: String
+    motherLastName: String
+    motherOccupation: String
+    motherDesignation: String
+    motherExServiceWomen: Boolean
+    motherContactNumber: String
+    fatherFirstName: String
+    fatherMiddleName: String
+    fatherLastName: String
+    fatherOccupation: String
+    fatherDesignation: String
+    fatherExServiceMen: Boolean
+    fatherContactNumber: String
+}
+
+type SiblingInformation {
+    siblingName: String
+    age: Int
+    status: String
+    organization: String
+}
+
+input StudentInformationInput {
+    dob: String
+    age: Int
+    gender: String
+    adhaar: String
+    address: String
+    school: String
+    class: String
+    board: String
+    medium: String
+}
+
+input GuardianInformationInput {
+    motherFirstName: String
+    motherMiddleName: String
+    motherLastName: String
+    motherOccupation: String
+    motherDesignation: String
+    motherExServiceWomen: Boolean
+    motherContactNumber: String
+    fatherFirstName: String
+    fatherMiddleName: String
+    fatherLastName: String
+    fatherOccupation: String
+    fatherDesignation: String
+    fatherExServiceMen: Boolean
+    fatherContactNumber: String
+}
+
+input SiblingInformationInput {
+    siblingName: String
+    age: Int
+    status: String
+    organization: String
 }
 `;
 

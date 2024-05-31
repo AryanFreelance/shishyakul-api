@@ -1,4 +1,5 @@
-import { db } from "../db/index.js";
+import { deleteObject, ref } from "firebase/storage";
+import { db, storage } from "../db/index.js";
 import {
   collection,
   deleteDoc,
@@ -11,30 +12,47 @@ import {
 const testPaperResolver = {
   Query: {
     testpapers: async () => {
-      const testPapers = [];
+      const testPapers = { published: [], draft: [] };
       const testPapersCollection = collection(db, "testPapers");
       const testPapersSnapshot = await getDocs(testPapersCollection);
       testPapersSnapshot.forEach((doc) => {
-        console.log(doc.data());
-        testPapers.push(doc.data());
+        testPapers.published.push(doc.data());
+      });
+      const testPapersDraftCollection = collection(db, "testPapersDraft");
+      const testPapersDraftSnapshot = await getDocs(testPapersDraftCollection);
+      testPapersDraftSnapshot.forEach((doc) => {
+        testPapers.draft.push(doc.data());
       });
       return testPapers;
     },
-    testpaper: async (_, { id }) => {
-      const testPaper = await getDoc(doc(db, "testPapers", id));
+    testpaper: async (_, { id, published }) => {
+      if (published) {
+        const testPaper = await getDoc(doc(db, "testPapers", id));
+        return testPaper.data();
+      }
+      const testPaper = await getDoc(doc(db, "testPapersDraft", id));
       return testPaper.data();
+    },
+    testpaperUsers: async (_, { id }) => {
+      const stud = await getDoc(doc(db, "students", id));
+      const student = stud.data();
+
+      const testPapersCollection = collection(db, "testPapers");
+      const testPapersSnapshot = await getDocs(testPapersCollection);
+      const testPapers = [];
+      testPapersSnapshot.forEach((doc) => {
+        if (
+          doc.data().sharedWith.includes(student?.email) ||
+          doc.data().sharedWith.includes(student?.grade)
+        ) {
+          testPapers.push(doc.data());
+        }
+      });
+      return testPapers;
     },
   },
   Mutation: {
-    createTest: async (_, { title, subject, date, totalMarks, url }) => {
-      let today = new Date();
-      let id = `${today.getFullYear()}${
-        today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
-      }${
-        today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
-      }${
-        today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
-      }`;
+    createTest: async (_, { id, title, subject, date, totalMarks, url }) => {
       const testPaper = {
         id,
         title,
@@ -42,94 +60,110 @@ const testPaperResolver = {
         date,
         totalMarks,
         url,
-        sharedWith: [],
         createdAt: new Date().toLocaleString(),
+        published: false,
       };
       console.log(testPaper);
-      await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });
-      return testPaper;
+      await setDoc(doc(db, "testPapersDraft", testPaper.id), { ...testPaper })
+        .then(() => {
+          console.log("Document successfully written!");
+        })
+        .catch((error) => {
+          console.error("Error writing document: ", error);
+          return "ERROR";
+        });
+
+      return "SUCCESS";
     },
-    updateTest: async (
-      _,
-      { id, title, subject, date, totalMarks, url, sharedWith }
-    ) => {
-      const prevData = await getDoc(doc(db, "testPapers", id));
+    updateDraftTest: async (_, { id, title, subject, date, totalMarks }) => {
+      const prevData = await getDoc(doc(db, "testPapersDraft", id));
       const testPaper = {
         id,
         title: title || prevData.data().title,
         subject: subject || prevData.data().subject,
         date: date || prevData.data().date,
         totalMarks: totalMarks || prevData.data().totalMarks,
-        url: url || prevData.data().url,
+        url: prevData.data().url,
         createdAt: prevData.data().createdAt,
-        sharedWith: sharedWith || prevData.data().sharedWith,
+        published: false,
       };
       console.log(testPaper);
-      await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });
-
-      const studentData = await getDocs(collection(db, "students"));
-      const students = studentData.docs.map((doc) => doc.data());
-      // Update the test paper id in the student's testPaper array if the student's email is in the sharedWith array and if not removed the test paper id from the student's testPaper array
-      students.forEach(async (student) => {
-        if (sharedWith.includes(student.email)) {
-          const stud = await getDoc(doc(db, "students", student.userId));
-          const studData = stud.data();
-          if (studData.testPaper.includes(testPaper.id)) {
-            console.log("TESTID", testPaper.id);
-          } else {
-            studData.testPaper.push(testPaper.id);
-            await setDoc(doc(db, "students", student.userId), { ...studData });
-          }
-          console.log(studData);
-        }
+      await setDoc(doc(db, "testPapersDraft", testPaper.id), {
+        ...testPaper,
+      }).catch((error) => {
+        console.error("Error writing document: ", error);
+        return "ERROR";
       });
-      console.log("TESTPAPERUPDATE", testPaper);
-      return testPaper;
+      return "SUCCESS";
+    },
+    publishTestPaper: async (_, { id }) => {
+      const paper = await getDoc(doc(db, "testPapersDraft", id)).then((doc) => {
+        return doc.data();
+      });
+      await setDoc(doc(db, "testPapers", id), {
+        ...paper,
+        published: true,
+        sharedWith: [],
+      })
+        .then(() => {
+          console.log("Document successfully written!");
+        })
+        .catch((error) => {
+          console.error("Error writing document: ", error);
+          return "ERROR";
+        });
+
+      await deleteDoc(doc(db, "testPapersDraft", id))
+        .then(() => {
+          console.log("Document successfully deleted!");
+        })
+        .catch((error) => {
+          console.error("Error deleting document: ", error);
+          return "ERROR";
+        });
+      return "SUCCESS";
     },
     updateSharedTest: async (_, { id, sharedWith }) => {
       const prevData = await getDoc(doc(db, "testPapers", id));
       const testPaper = {
-        id,
-        title: prevData.data().title,
-        subject: prevData.data().subject,
-        date: prevData.data().date,
-        totalMarks: prevData.data().totalMarks,
-        url: prevData.data().url,
+        ...prevData.data(),
         sharedWith,
-        createdAt: prevData.data().createdAt,
       };
-
       console.log(testPaper);
-      await setDoc(doc(db, "testPapers", testPaper.id), { ...testPaper });
-
-      //   Add the test id to the sharedWith array of the student whose id is in the sharedWith array
-      sharedWith.forEach(async (studentId) => {
-        const studentData = await getDoc(doc(db, "students", studentId));
-        const student = studentData.data();
-        const testPaper = { testId: id };
-        student.testPaper.push(testPaper);
-        await setDoc(doc(db, "students", studentId), { ...student });
-      });
-
-      return testPaper;
-    },
-    deleteTest: async (_, { id }) => {
-      const testPaper = await getDoc(doc(db, "testPapers", id));
-      // Remove the test paper id from all the students who have it
-      const studentData = await getDocs(collection(db, "students"));
-      const students = studentData.docs.map((doc) => doc.data());
-      students.forEach(async (student) => {
-        const stud = await getDoc(doc(db, "students", student.userId));
-        const studData = stud.data();
-        const index = studData.testPaper.indexOf(id);
-        if (index > -1) {
-          studData.testPaper.splice(index, 1);
+      await setDoc(doc(db, "testPapers", id), { ...testPaper }).catch(
+        (error) => {
+          console.error("Error writing document: ", error);
+          return "ERROR";
         }
-        console.log("UPDATEDSTUDDATA", studData);
-        await setDoc(doc(db, "students", student.userId), { ...studData });
+      );
+      return "SUCCESS";
+    },
+    deleteTest: async (_, { id, published }) => {
+      if (published) {
+        await deleteDoc(doc(db, "testPapers", id))
+          .then(() => {
+            console.log("Document successfully deleted!");
+          })
+          .catch((error) => {
+            console.error("Error deleting document: ", error);
+            return "ERROR";
+          });
+      } else {
+        await deleteDoc(doc(db, "testPapersDraft", id))
+          .then(() => {
+            console.log("Document successfully deleted!");
+          })
+          .catch((error) => {
+            console.error("Error deleting document: ", error);
+            return "ERROR";
+          });
+      }
+
+      await deleteObject(ref(storage, `test_papers/${id}`)).catch((error) => {
+        console.error("Error deleting document: ", error);
+        return "ERROR";
       });
-      await deleteDoc(doc(db, "testPapers", id));
-      return testPaper.data();
+      return "SUCCESS";
     },
   },
 };

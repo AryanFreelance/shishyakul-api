@@ -1,0 +1,23 @@
+Functions:
+
+    • Student Functions - students
+        ✅ Get Student (All Test Paper)
+        ✅ Add Student
+        ✅ Update Student
+        ✅ Delete Student
+        ✅ Add Fee
+        ✅ Delete Fee
+    • Attendance Functions - attendance
+        ✅ Create Attendance
+        ✅ Get Attendance
+        ✅ Update Attendance
+        - Send Email to every absent student for a day
+    • Draft Test Paper Functions - testPapersDraft
+        ✅ Create Paper
+        ✅ Update Paper
+        ✅ Publish Paper
+        ✅ Delete Paper
+        - Upload Test Paper / Remove Test Paper
+    • Published Papers Functions - testPapers
+        ✅ Update Shared Paper
+        ✅ Delete Paper

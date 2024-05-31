@@ -8,12 +8,13 @@ type Verification {
 type Query {
     verifications: [Verification]
     verification(verificationCode: ID!): Verification
+    verifyStudentCode(verificationCode: ID!): String!
 }
 
 type Mutation {
     createVerification(studentEmail: String!): SuccessResponse
     updateVerification(verificationCode: ID!, expired: Boolean): SuccessResponse
-    verifyStudentCode(verificationCode: ID!): SuccessResponse
+    # verifyStudentCode(verificationCode: ID!): Boolean!
     deleteVerification(verificationCode: ID!): DeleteResponse
 }
 

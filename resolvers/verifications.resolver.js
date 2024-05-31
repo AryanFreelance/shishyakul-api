@@ -31,6 +31,15 @@ const verificationsResolver = {
       );
       return verification.data();
     },
+    verifyStudentCode: async (_, { verificationCode }) => {
+      // Verify if the verification code exists
+      let message = true;
+      const verification = await getDoc(
+        doc(db, "verifications", verificationCode)
+      );
+      if (!verification.data()) message = false;
+      return message ? verification.data().studentEmail : "";
+    },
   },
   Mutation: {
     createVerification: async (_, { studentEmail }) => {
@@ -103,27 +112,6 @@ const verificationsResolver = {
             message: "Error updating document",
           };
         });
-
-      return message;
-    },
-    verifyStudentCode: async (_, { verificationCode }) => {
-      let message = {};
-      try {
-        const verification = await getDoc(
-          doc(db, "verifications", verificationCode)
-        );
-        const verificationData = verification.data();
-        if (verificationData.expired) {
-          message = { success: false, message: "Verification code expired" };
-        } else if (!verificationData.expired) {
-          message = { success: true, message: "Verification code verified" };
-        } else {
-          message = { success: false, message: "Verification code not found" };
-        }
-      } catch (error) {
-        message = { success: false, message: "Error verifying student" };
-        console.log(error);
-      }
 
       return message;
     },

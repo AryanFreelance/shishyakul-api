@@ -1,42 +1,51 @@
 const testPaperTypeDef = `#graphql
 type TestPaper {
     id: ID!
-    title: String!
-    subject: String!
-    date: String!
-    totalMarks: Int!
-    url: String!
+    title: String
+    subject: String
+    date: String
+    totalMarks: Int
+    url: String
     sharedWith: [String]
     createdAt: String!
+    published: Boolean!
 }
 
 type Query {
-    testpapers: [TestPaper]
-    testpaper(id: ID!): TestPaper
+    testpapers: TestPapersOutput
+    testpaper(id: ID!, published: Boolean!): TestPaper
+    testpaperUsers(id:ID!): [TestPaper]
+}
+
+type TestPapersOutput {
+    published: [TestPaper]
+    draft: [TestPaper]
 }
 
 type Mutation {
     createTest(
+        id: ID!
         title: String!,
         subject: String!,
         date: String!,
         totalMarks: Int!,
         url: String!,
-    ): TestPaper
-    updateTest(
+    ): String
+    updateDraftTest(
         id: ID!,
         title: String,
         subject: String,
         date: String,
         totalMarks: Int,
-        url: String,
-        sharedWith: [String]
-    ): TestPaper
+    ): String
+    publishTestPaper(
+        id: ID!,
+    ): String
     updateSharedTest(
         id: ID!,
         sharedWith: [String]
-    ): TestPaper
-    deleteTest(id: ID!): TestPaper
+    ): String
+    deleteTest(id: ID!, published: Boolean!): String
 }
 `;
 

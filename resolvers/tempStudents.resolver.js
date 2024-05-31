@@ -1,3 +1,5 @@
+// REJECTED
+
 import {
   collection,
   deleteDoc,
@@ -51,21 +53,21 @@ const tempStudentResolver = {
       return message;
     },
     deleteTempStudent: async (_, { email }) => {
-      let message = {};
-      await deleteDoc(doc(db, "tempstudents", email))
-        .then(() => {
-          console.log("Document deleted with ID: ", email);
-          message = {
-            success: true,
-            message: "Document deleted with ID",
-          };
-        })
-        .catch((error) => {
-          console.error("Error deleting document: ", error);
-          message = { success: false, message: "Error deleting document" };
-        });
+      const tempstudent = await getDoc(doc(db, "tempstudents", email));
 
-      return message;
+      await deleteDoc(doc(db, "tempstudents", email)).catch((error) => {
+        console.log("Error deleting document: ", error);
+        return "ERROR";
+      });
+
+      await deleteDoc(
+        doc(db, "verifications", tempstudent.data().verificationCode)
+      ).catch((error) => {
+        console.log("Error deleting document: ", error);
+        return "ERROR";
+      });
+
+      return "SUCCESS";
     },
   },
 };
