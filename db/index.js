@@ -2,17 +2,19 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCXrEv6PZ4NYFbqSQRyinA4d40LBHHj5Vo",
-  authDomain: "shishyakul-699f2.firebaseapp.com",
-  databaseURL:
-    "https://shishyakul-699f2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "shishyakul-699f2",
-  storageBucket: "shishyakul-699f2.appspot.com",
-  messagingSenderId: "666950754196",
-  appId: "1:666950754196:web:40eca28d6a30026e787981",
-  measurementId: "G-29SKYTZTBN",
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
