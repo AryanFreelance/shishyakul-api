@@ -50,6 +50,55 @@ const testPaperResolver = {
       });
       return testPapers;
     },
+    testpaperMarks: async (_, { id }) => {
+      const testPaper = await getDoc(doc(db, "testPapers", id));
+      if (!testPaper.data()) {
+        return null;
+      }
+      if (!testPaper.data().marks) return [];
+      // Sort and return the test paper marks in descending order
+      const testpaperMarks = testPaper.data().marks;
+      testpaperMarks.sort((a, b) => b.marks - a.marks);
+
+      return testpaperMarks;
+    },
+    testAccessedUsers: async (_, { id }) => {
+      const testPaper = await getDoc(doc(db, "testPapers", id));
+      if (!testPaper.data()) {
+        return null;
+      }
+      const students = [];
+      const studentsCollection = collection(db, "students");
+      const studentsSnapshot = await getDocs(studentsCollection);
+      console.log(testPaper.data().sharedWith);
+      studentsSnapshot.forEach((doc) => {
+        if (
+          testPaper.data().sharedWith.includes(doc.data().email) ||
+          testPaper.data().sharedWith.includes(doc.data().grade)
+        ) {
+          const {
+            userId,
+            firstname,
+            middlename,
+            lastname,
+            email,
+            phone,
+            grade,
+          } = doc.data();
+          students.push({
+            userId,
+            firstname,
+            middlename,
+            lastname,
+            email,
+            phone,
+            grade,
+          });
+          console.log(students);
+        }
+      });
+      return students;
+    },
   },
   Mutation: {
     createTest: async (_, { id, title, subject, date, totalMarks, url }) => {
@@ -131,6 +180,33 @@ const testPaperResolver = {
       };
       console.log(testPaper);
       await setDoc(doc(db, "testPapers", id), { ...testPaper }).catch(
+        (error) => {
+          console.error("Error writing document: ", error);
+          return "ERROR";
+        }
+      );
+      return "SUCCESS";
+    },
+    addMarks: async (_, { testId, data }) => {
+      const prevData = await getDoc(doc(db, "testPapers", testId));
+
+      const today = new Date();
+      const todayDate = `${today.getFullYear()}-${
+        today.getMonth() + 1 < 10
+          ? "0" + (today.getMonth() + 1)
+          : today.getMonth() + 1
+      }-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
+
+      if (prevData.data().date >= todayDate || !prevData.data().published)
+        return "ERROR";
+
+      const testPaper = {
+        ...prevData.data(),
+        marks: data,
+      };
+
+      console.log(testPaper);
+      await setDoc(doc(db, "testPapers", testId), { ...testPaper }).catch(
         (error) => {
           console.error("Error writing document: ", error);
           return "ERROR";
