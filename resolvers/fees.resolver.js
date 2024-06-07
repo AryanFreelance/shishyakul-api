@@ -21,7 +21,21 @@ const feesResolver = {
     },
   },
   Mutation: {
-    createFee: async (_, { userId, email, feesPaid, paidOn, month, year }) => {
+    createFee: async (
+      _,
+      {
+        userId,
+        email,
+        feesPaid,
+        paidOn,
+        month,
+        year,
+        mode,
+        chequeRefNo,
+        upiId,
+        referenceImgUrl,
+      }
+    ) => {
       let today = new Date();
       let id = `${today.getFullYear()}${
         today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
@@ -30,16 +44,57 @@ const feesResolver = {
       }${
         today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
       }`;
-      const fee = {
-        userId,
-        id,
-        email,
-        feesPaid,
-        paidOn,
-        month,
-        year,
-        createdAt: new Date().toLocaleString(),
-      };
+      // const fee = {
+      //   userId,
+      //   id,
+      //   email,
+      //   feesPaid,
+      //   paidOn,
+      //   month,
+      //   year,
+      //   createdAt: new Date().toLocaleString(),
+      // };
+      let fee = {};
+      if (mode === "cash") {
+        fee = {
+          userId,
+          id,
+          email,
+          feesPaid,
+          paidOn,
+          month,
+          year,
+          createdAt: new Date().toLocaleString(),
+        };
+      } else if (mode === "cheque") {
+        fee = {
+          userId,
+          id,
+          email,
+          feesPaid,
+          paidOn,
+          month,
+          year,
+          mode,
+          chequeRefNo,
+          referenceImgUrl,
+          createdAt: new Date().toLocaleString(),
+        };
+      } else if (mode === "upi") {
+        fee = {
+          userId,
+          id,
+          email,
+          feesPaid,
+          paidOn,
+          month,
+          year,
+          mode,
+          upiId,
+          referenceImgUrl,
+          createdAt: new Date().toLocaleString(),
+        };
+      }
       console.log(fee);
       await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee })
         .then(() => {

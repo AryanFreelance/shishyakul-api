@@ -45,9 +45,17 @@ const testPaperResolver = {
           doc.data().sharedWith.includes(student?.email) ||
           doc.data().sharedWith.includes(student?.grade)
         ) {
-          testPapers.push(doc.data());
+          const testpaper = doc.data();
+          // I want to return the marks with the student's email
+          if (testpaper.marks) {
+            testpaper.marks = testpaper.marks.filter(
+              (mark) => mark.email === student?.email
+            );
+          }
+          testPapers.push(testpaper);
         }
       });
+      console.log("TESTPAPERS", testPapers);
       return testPapers;
     },
     testpaperMarks: async (_, { id }) => {
@@ -199,6 +207,20 @@ const testPaperResolver = {
 
       if (prevData.data().date >= todayDate || !prevData.data().published)
         return "ERROR";
+
+      data.sort((a, b) => b.marks - a.marks);
+
+      let rank = 1;
+      let prevMarks = data[0].marks;
+      data.forEach((mark) => {
+        if (mark.marks === prevMarks) {
+          mark.rank = rank;
+        } else {
+          rank++;
+          mark.rank = rank;
+        }
+        prevMarks = mark.marks;
+      });
 
       const testPaper = {
         ...prevData.data(),

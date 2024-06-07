@@ -15,9 +15,22 @@ type TestPaper {
 type Query {
     testpapers: TestPapersOutput
     testpaper(id: ID!, published: Boolean!): TestPaper
-    testpaperUsers(id:ID!): [TestPaper]
+    testpaperUsers(id:ID!): [TestPaperUser]
     testpaperMarks(id: ID!): [Marks]
     testAccessedUsers(id: ID!): [StudentCopy]
+}
+
+type TestPaperUser {
+    id: ID!
+    title: String
+    subject: String
+    date: String
+    totalMarks: Int
+    url: String
+    sharedWith: [String]
+    createdAt: String
+    published: Boolean
+    marks: [Marks]
 }
 
 type StudentCopy {
@@ -41,6 +54,7 @@ type Marks {
     email: String
     marks: Int
     grade: String
+    rank: Int   
 }
 
 type Mutation {
