@@ -8,6 +8,11 @@ type Fees {
     month: String
     year: String
     createdAt: String!
+    mode: String
+    chequeRefNo: String
+    upiId: String
+    chequeImgUrl: String
+    upiImgUrl: String
 }
 
 type Query {
@@ -17,7 +22,7 @@ type Query {
 }
 
 type Mutation {
-    createFee(userId: ID!, email: String!, feesPaid: Int!, paidOn: String!, month: String!, year: String!, mode: String!, chequeRefNo: String, upiId: String, referenceImgUrl: String): String!
+    createFee(id: ID!, userId: String!, email: String!, feesPaid: Int!, paidOn: String!, month: String!, year: String!, mode: String!, chequeRefNo: String, upiId: String, chequeImgUrl: String, upiImgUrl: String): String!
     deleteFee(userId: ID!, id: ID!): String!
 }
 `;

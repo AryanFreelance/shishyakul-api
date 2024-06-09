@@ -24,6 +24,7 @@ const feesResolver = {
     createFee: async (
       _,
       {
+        id,
         userId,
         email,
         feesPaid,
@@ -32,28 +33,11 @@ const feesResolver = {
         year,
         mode,
         chequeRefNo,
+        chequeImgUrl,
         upiId,
-        referenceImgUrl,
+        upiImgUrl,
       }
     ) => {
-      let today = new Date();
-      let id = `${today.getFullYear()}${
-        today.getHours() < 10 ? "0" + today.getHours() : today.getHours()
-      }${
-        today.getMinutes() < 10 ? "0" + today.getMinutes() : today.getMinutes()
-      }${
-        today.getSeconds() < 10 ? "0" + today.getSeconds() : today.getSeconds()
-      }`;
-      // const fee = {
-      //   userId,
-      //   id,
-      //   email,
-      //   feesPaid,
-      //   paidOn,
-      //   month,
-      //   year,
-      //   createdAt: new Date().toLocaleString(),
-      // };
       let fee = {};
       if (mode === "cash") {
         fee = {
@@ -64,6 +48,7 @@ const feesResolver = {
           paidOn,
           month,
           year,
+          mode,
           createdAt: new Date().toLocaleString(),
         };
       } else if (mode === "cheque") {
@@ -77,7 +62,7 @@ const feesResolver = {
           year,
           mode,
           chequeRefNo,
-          referenceImgUrl,
+          chequeImgUrl,
           createdAt: new Date().toLocaleString(),
         };
       } else if (mode === "upi") {
@@ -91,7 +76,7 @@ const feesResolver = {
           year,
           mode,
           upiId,
-          referenceImgUrl,
+          upiImgUrl,
           createdAt: new Date().toLocaleString(),
         };
       }
