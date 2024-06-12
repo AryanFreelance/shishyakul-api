@@ -2,10 +2,12 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   setDoc,
 } from "firebase/firestore";
-import { db } from "../db/index.js";
+import { db, storage } from "../db/index.js";
+import { deleteObject, ref } from "firebase/storage";
 
 const feesResolver = {
   Query: {
@@ -92,6 +94,40 @@ const feesResolver = {
       return "SUCCESS";
     },
     deleteFee: async (_, { userId, id }) => {
+      let pdfId = "";
+      let mode = "";
+      await getDoc(doc(db, "fees", userId, "fee", id))
+        .then((doc) => {
+          if (doc.exists()) {
+            mode = doc.data().mode;
+            pdfId =
+              doc.data().mode !== "cash" &&
+              (doc.data().mode === "cheque"
+                ? doc.data().chequeImgUrl
+                : doc.data().upiImgUrl);
+          }
+        })
+        .catch((error) => {
+          console.log("Error getting document:", error);
+          return "ERROR";
+        });
+      pdfId = pdfId
+        .split("/")
+        [pdfId.split("/").length - 1].split("?")[0]
+        .substring(6, 16);
+
+      // Delete Fee File
+      mode !== "cash" &&
+        (await deleteObject(ref(storage, `fee/${pdfId}`))
+          .then(() => {
+            console.log("File deleted successfully");
+          })
+          .catch((error) => {
+            console.error("Error deleting file: ", error);
+            return "ERROR";
+          }));
+
+      // Delete Fee Document
       await deleteDoc(doc(db, "fees", userId, "fee", id))
         .then(() => {
           console.log("Document deleted with ID: ", id);
