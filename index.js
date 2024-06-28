@@ -24,7 +24,11 @@ const server = new ApolloServer({
 await server.start();
 
 const corsOptions = {
-  origin: ["https://shishyakul.in"],
+  origin: [
+    "https://shishyakul.in",
+    "https://www.shishyakul.in",
+    "https://shishyakul.vercel.app",
+  ],
   credentials: true, // This allows cookies to be sent from the client
 };
 
