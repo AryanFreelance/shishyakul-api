@@ -28,6 +28,7 @@ const corsOptions = {
     "https://shishyakul.in",
     "https://www.shishyakul.in",
     "https://shishyakul.vercel.app",
+    "http://localhost:3000",
   ],
   credentials: true, // This allows cookies to be sent from the client
 };

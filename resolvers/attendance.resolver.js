@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  runTransaction,
 } from "firebase/firestore";
 
 const attendanceResolver = {
@@ -86,7 +87,6 @@ const attendanceResolver = {
       };
       console.log(attendance);
 
-      // Check which id's were updated and update the attendance count accordingly
       const prevAttendance = prevData.data();
 
       const prevPresent = prevAttendance.present;
@@ -95,73 +95,59 @@ const attendanceResolver = {
       const newPresent = present.filter((id) => !prevPresent.includes(id));
       const newAbsent = absent.filter((id) => !prevAbsent.includes(id));
 
-      const removedPresent = prevPresent.filter((id) => !present.includes(id));
-      const removedAbsent = prevAbsent.filter((id) => !absent.includes(id));
+      newPresent.forEach(async (sID) => {
+        try {
+          await runTransaction(db, async (transaction) => {
+            const sDoc = await transaction.get(doc(db, "students", sID));
+            if (!sDoc.exists()) {
+              throw "Document does not exist!";
+            }
 
-      console.log("New Present", newPresent);
-      console.log("New Absent", newAbsent);
-      console.log("Removed Present", removedPresent);
-      console.log("Removed Absent", removedAbsent);
+            const newPresentData = Number(sDoc.data().attendance.present) + 1;
+            const newAbsentData = Number(sDoc.data().attendance.absent) - 1;
 
-      newPresent.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            present: studentData.attendance.present + 1,
-          },
-        });
-      });
-
-      newAbsent.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            absent: studentData.attendance.absent + 1,
-          },
-        });
-      });
-
-      removedPresent.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            present: studentData.attendance.present - 1,
-          },
-        });
-      });
-
-      removedAbsent.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            absent: studentData.attendance.absent - 1,
-          },
-        });
-      });
-
-      await setDoc(doc(db, "attendance", timestamp), { ...attendance }).catch(
-        (error) => {
-          console.error("Error writing document: ", error);
-          return "ERROR";
+            console.log("New Present Data", newPresentData);
+            console.log("New Absent Data", newAbsentData);
+            transaction.update(doc(db, "students", sID), {
+              attendance: {
+                present: newPresentData,
+                absent: newAbsentData,
+              },
+            });
+          });
+          console.log("Transaction successfully committed!");
+        } catch (e) {
+          console.log("Transaction failed: ", e);
         }
-      );
+      });
+
+      newAbsent.forEach(async (sID) => {
+        try {
+          await runTransaction(db, async (transaction) => {
+            const sDoc = await transaction.get(doc(db, "students", sID));
+            if (!sDoc.exists()) {
+              throw "Document does not exist!";
+            }
+
+            const newAbsentData = Number(sDoc.data().attendance.absent) + 1;
+            const newPresentData = Number(sDoc.data().attendance.present) - 1;
+
+            console.log("New Present Data", newPresentData);
+            console.log("New Absent Data", newAbsentData);
+
+            transaction.update(doc(db, "students", sID), {
+              attendance: {
+                present: newPresentData,
+                absent: newAbsentData,
+              },
+            });
+          });
+          console.log("Transaction successfully committed!");
+        } catch (e) {
+          console.log("Transaction failed: ", e);
+        }
+      });
+
       return "SUCCESS";
     },
     resetAttendance: async () => {
