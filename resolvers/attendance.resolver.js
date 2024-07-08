@@ -95,6 +95,11 @@ const attendanceResolver = {
       const newPresent = present.filter((id) => !prevPresent.includes(id));
       const newAbsent = absent.filter((id) => !prevAbsent.includes(id));
 
+      // Set the attendance document data to the updated one
+      await setDoc(doc(db, "attendance", timestamp), {
+        ...attendance,
+      });
+
       newPresent.forEach(async (sID) => {
         try {
           await runTransaction(db, async (transaction) => {
