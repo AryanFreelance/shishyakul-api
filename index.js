@@ -9,7 +9,6 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import mergedResolvers from "./resolvers/index.js";
 import mergedTypeDefs from "./typeDefs/index.js";
 // import job from "./cron.js";
-
 // job.start();
 
 const app = express();
