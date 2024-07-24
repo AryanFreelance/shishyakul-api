@@ -16,7 +16,7 @@ const feesResolver = {
       const feesCollection = collection(db, "fees");
       const feesSnapshot = await getDocs(feesCollection);
       feesSnapshot.forEach((doc) => {
-        console.log(doc.data());
+        // console.log(doc.data());
         fees.push(doc.data());
       });
       return fees;
@@ -82,13 +82,13 @@ const feesResolver = {
           createdAt: new Date().toLocaleString(),
         };
       }
-      console.log(fee);
+      // console.log(fee);
       await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee })
         .then(() => {
-          console.log("Document written with ID: ", fee.id);
+          // console.log("Document written with ID: ", fee.id);
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           return "ERROR";
         });
       return "SUCCESS";
@@ -108,7 +108,7 @@ const feesResolver = {
           }
         })
         .catch((error) => {
-          console.log("Error getting document:", error);
+          // console.log("Error getting document:", error);
           return "ERROR";
         });
       pdfId = pdfId
@@ -120,20 +120,20 @@ const feesResolver = {
       mode !== "cash" &&
         (await deleteObject(ref(storage, `fee/${pdfId}`))
           .then(() => {
-            console.log("File deleted successfully");
+            // console.log("File deleted successfully");
           })
           .catch((error) => {
-            console.error("Error deleting file: ", error);
+            // console.error("Error deleting file: ", error);
             return "ERROR";
           }));
 
       // Delete Fee Document
       await deleteDoc(doc(db, "fees", userId, "fee", id))
         .then(() => {
-          console.log("Document deleted with ID: ", id);
+          // console.log("Document deleted with ID: ", id);
         })
         .catch((error) => {
-          console.error("Error deleting document: ", error);
+          // console.error("Error deleting document: ", error);
           return "ERROR";
         });
 

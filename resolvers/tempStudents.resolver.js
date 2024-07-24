@@ -17,7 +17,7 @@ const tempStudentResolver = {
       const tempstudentsCollection = collection(db, "tempstudents");
       const tempstudentsSnapshot = await getDocs(tempstudentsCollection);
       tempstudentsSnapshot.forEach((doc) => {
-        console.log(doc.data());
+        // console.log(doc.data());
         tempstudents.push(doc.data());
       });
       return tempstudents;
@@ -38,32 +38,32 @@ const tempStudentResolver = {
         ...tempstudent,
       })
         .then(() => {
-          console.log("Document written with ID: ", tempstudent.email);
+          // console.log("Document written with ID: ", tempstudent.email);
           message = {
             success: true,
             message: "Document written with ID",
           };
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           message = { success: false, message: "Error adding document" };
         });
 
-      console.log(tempstudent);
+      // console.log(tempstudent);
       return message;
     },
     deleteTempStudent: async (_, { email }) => {
       const tempstudent = await getDoc(doc(db, "tempstudents", email));
 
       await deleteDoc(doc(db, "tempstudents", email)).catch((error) => {
-        console.log("Error deleting document: ", error);
+        // console.log("Error deleting document: ", error);
         return "ERROR";
       });
 
       await deleteDoc(
         doc(db, "verifications", tempstudent.data().verificationCode)
       ).catch((error) => {
-        console.log("Error deleting document: ", error);
+        // console.log("Error deleting document: ", error);
         return "ERROR";
       });
 

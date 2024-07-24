@@ -51,17 +51,17 @@ const studentResolver = {
         ...verification,
       })
         .then(() => {
-          console.log(
-            "Document written with ID: ",
-            verification.verificationCode
-          );
+          // // console.log(
+          //   "Document written with ID: ",
+          //   verification.verificationCode
+          // );
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           return "ERROR";
         });
 
-      console.log(verification);
+      // console.log(verification);
 
       // Add TempStudent
       const tempstudent = {
@@ -72,14 +72,14 @@ const studentResolver = {
         ...tempstudent,
       })
         .then(() => {
-          console.log("Document written with ID: ", tempstudent.email);
+          // console.log("Document written with ID: ", tempstudent.email);
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           return "ERROR";
         });
 
-      console.log(tempstudent);
+      // console.log(tempstudent);
 
       // Return the Verification Code if successful
       return verification.verificationCode.toString();
@@ -99,7 +99,7 @@ const studentResolver = {
     ) => {
       createUserWithEmailAndPassword(auth, email, password)
         .then(async (userCredential) => {
-          console.log("USERCREDS", userCredential);
+          // console.log("USERCREDS", userCredential);
           const userId = userCredential.user.uid;
 
           // Create Student
@@ -114,10 +114,10 @@ const studentResolver = {
             attendance: { present: 0, absent: 0 },
           })
             .then(() => {
-              console.log("Document written with ID: ", userId);
+              // console.log("Document written with ID: ", userId);
             })
             .catch((error) => {
-              console.error("Error adding document: ", error);
+              // console.error("Error adding document: ", error);
               message = false;
               return "ERROR";
             });
@@ -125,25 +125,25 @@ const studentResolver = {
           // Delete TempStudent
           await deleteDoc(doc(db, "tempstudents", email))
             .then(() => {
-              console.log("Document deleted with ID: ", email);
+              // console.log("Document deleted with ID: ", email);
             })
             .catch((error) => {
-              console.error("Error deleting document: ", error);
+              // console.error("Error deleting document: ", error);
               return "ERROR";
             });
 
           // Delete Verification
           await deleteDoc(doc(db, "verifications", verificationCode))
             .then(() => {
-              console.log("Document deleted with ID: ", verificationCode);
+              // console.log("Document deleted with ID: ", verificationCode);
             })
             .catch((error) => {
-              console.error("Error deleting document: ", error);
+              // console.error("Error deleting document: ", error);
               return "ERROR";
             });
         })
         .catch((error) => {
-          console.log(error);
+          // console.log(error);
           return "ERROR";
         });
 
@@ -165,7 +165,7 @@ const studentResolver = {
     ) => {
       const studentDetails = await getDoc(doc(db, "students", userId)).catch(
         (error) => {
-          console.error("Error getting document: ", error);
+          // console.error("Error getting document: ", error);
           return "ERROR";
         }
       );
@@ -186,11 +186,11 @@ const studentResolver = {
         siblingInformation: siblingInformation,
       };
 
-      console.log("UPDATEDSTUDENT", updatedStudent);
+      // console.log("UPDATEDSTUDENT", updatedStudent);
 
       await setDoc(doc(db, "students", userId), { ...updatedStudent }).catch(
         (error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           return "ERROR";
         }
       );
@@ -199,7 +199,7 @@ const studentResolver = {
     },
     deleteStudent: async (_, { userId }) => {
       await deleteDoc(doc(db, "students", userId)).catch((error) => {
-        console.error("Error removing document: ", error);
+        // console.error("Error removing document: ", error);
         return "ERROR";
       });
 
@@ -210,7 +210,7 @@ const studentResolver = {
           });
         })
         .catch((error) => {
-          console.error("Error removing document: ", error);
+          // console.error("Error removing document: ", error);
           return "ERROR";
         });
 
@@ -224,12 +224,12 @@ const studentResolver = {
         const feesCollection = collection(db, "fees", parent.userId, "fee");
         const feesSnapshot = await getDocs(feesCollection);
         feesSnapshot.forEach((doc) => {
-          console.log(doc.data());
+          // console.log(doc.data());
           studentFees.push(doc.data());
         });
         return studentFees;
       } catch (error) {
-        console.log(error);
+        // console.log(error);
       }
     },
   },

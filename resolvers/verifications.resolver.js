@@ -22,7 +22,7 @@ const verificationsResolver = {
       verificationsSnapshot.forEach((doc) => {
         if (doc.data().expired === true) verifications.push(doc.data());
       });
-      console.log(verifications);
+      // console.log(verifications);
       return verifications;
     },
     verification: async (_, { verificationCode }) => {
@@ -66,10 +66,10 @@ const verificationsResolver = {
         ...verification,
       })
         .then(() => {
-          console.log(
-            "Document written with ID: ",
-            verification.verificationCode
-          );
+          // console.log(
+          //   "Document written with ID: ",
+          //   verification.verificationCode
+          // );
           message = {
             code: verification.verificationCode,
             success: true,
@@ -77,27 +77,27 @@ const verificationsResolver = {
           };
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           message = { success: false, message: "Error adding document" };
         });
 
-      console.log(verification);
+      // console.log(verification);
       return message;
     },
     updateVerification: async (_, { verificationCode, expired }) => {
       let message = {};
-      console.log(verificationCode);
+      // console.log(verificationCode);
       const verification = await getDoc(
         doc(db, "verifications", verificationCode)
       );
       const verificationData = verification.data();
-      console.log(verificationData);
+      // console.log(verificationData);
       await updateDoc(doc(db, "verifications", verificationCode), {
         ...verificationData,
         expired,
       })
         .then(() => {
-          console.log("Document updated with ID: ", verificationCode);
+          // console.log("Document updated with ID: ", verificationCode);
           message = {
             code: verificationCode,
             success: true,
@@ -105,7 +105,7 @@ const verificationsResolver = {
           };
         })
         .catch((error) => {
-          console.error("Error updating document: ", error);
+          // console.error("Error updating document: ", error);
           message = {
             code: verificationCode,
             success: false,
@@ -119,11 +119,11 @@ const verificationsResolver = {
       let message = {};
       await deleteDoc(doc(db, "verifications", verificationCode))
         .then(() => {
-          console.log("Document deleted with ID: ", verificationCode);
+          // console.log("Document deleted with ID: ", verificationCode);
           message = { success: true, message: "Document deleted with ID" };
         })
         .catch((error) => {
-          console.error("Error deleting document: ", error);
+          // console.error("Error deleting document: ", error);
           message = { success: false, message: "Error deleting document" };
         });
 

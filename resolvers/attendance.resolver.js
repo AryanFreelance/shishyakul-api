@@ -17,7 +17,7 @@ const attendanceResolver = {
       attendanceSnapshot.forEach((doc) => {
         attendance.push(doc.data());
       });
-      console.log(attendance);
+      // console.log(attendance);
       return attendance;
     },
     attendance: async (_, { timestamp }) => {
@@ -33,7 +33,7 @@ const attendanceResolver = {
         absent,
         createdAt: new Date().toLocaleString(),
       };
-      console.log(attendance);
+      // console.log(attendance);
 
       // Check if the attendance has been taken for the day, if yes then show error, else create a new attendance
       const attendanceDoc = doc(db, "attendance", timestamp);
@@ -42,10 +42,10 @@ const attendanceResolver = {
 
       await setDoc(doc(db, "attendance", attendance.timestamp), attendance)
         .then((docRef) => {
-          console.log("Document written with ID: ", docRef);
+          // console.log("Document written with ID: ", docRef);
         })
         .catch((error) => {
-          console.error("Error adding document: ", error);
+          // console.error("Error adding document: ", error);
           return "ERROR";
         });
 
@@ -85,7 +85,7 @@ const attendanceResolver = {
         present,
         absent,
       };
-      console.log(attendance);
+      // console.log(attendance);
 
       const prevAttendance = prevData.data();
 
@@ -111,8 +111,8 @@ const attendanceResolver = {
             const newPresentData = Number(sDoc.data().attendance.present) + 1;
             const newAbsentData = Number(sDoc.data().attendance.absent) - 1;
 
-            console.log("New Present Data", newPresentData);
-            console.log("New Absent Data", newAbsentData);
+            // console.log("New Present Data", newPresentData);
+            // console.log("New Absent Data", newAbsentData);
             transaction.update(doc(db, "students", sID), {
               attendance: {
                 present: newPresentData,
@@ -120,9 +120,9 @@ const attendanceResolver = {
               },
             });
           });
-          console.log("Transaction successfully committed!");
+          // console.log("Transaction successfully committed!");
         } catch (e) {
-          console.log("Transaction failed: ", e);
+          // console.log("Transaction failed: ", e);
         }
       });
 
@@ -137,8 +137,8 @@ const attendanceResolver = {
             const newAbsentData = Number(sDoc.data().attendance.absent) + 1;
             const newPresentData = Number(sDoc.data().attendance.present) - 1;
 
-            console.log("New Present Data", newPresentData);
-            console.log("New Absent Data", newAbsentData);
+            // console.log("New Present Data", newPresentData);
+            // console.log("New Absent Data", newAbsentData);
 
             transaction.update(doc(db, "students", sID), {
               attendance: {
@@ -147,9 +147,9 @@ const attendanceResolver = {
               },
             });
           });
-          console.log("Transaction successfully committed!");
+          // console.log("Transaction successfully committed!");
         } catch (e) {
-          console.log("Transaction failed: ", e);
+          // console.log("Transaction failed: ", e);
         }
       });
 

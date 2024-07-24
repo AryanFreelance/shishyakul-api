@@ -55,7 +55,7 @@ const testPaperResolver = {
           testPapers.push(testpaper);
         }
       });
-      console.log("TESTPAPERS", testPapers);
+      // console.log("TESTPAPERS", testPapers);
       return testPapers;
     },
     testpaperMarks: async (_, { id }) => {
@@ -78,7 +78,7 @@ const testPaperResolver = {
       const students = [];
       const studentsCollection = collection(db, "students");
       const studentsSnapshot = await getDocs(studentsCollection);
-      console.log(testPaper.data().sharedWith);
+      // console.log(testPaper.data().sharedWith);
       studentsSnapshot.forEach((doc) => {
         if (
           testPaper.data().sharedWith.includes(doc.data().email) ||
@@ -102,7 +102,7 @@ const testPaperResolver = {
             phone,
             grade,
           });
-          console.log(students);
+          // console.log(students);
         }
       });
       return students;
@@ -120,13 +120,13 @@ const testPaperResolver = {
         createdAt: new Date().toLocaleString(),
         published: false,
       };
-      console.log(testPaper);
+      // console.log(testPaper);
       await setDoc(doc(db, "testPapersDraft", testPaper.id), { ...testPaper })
         .then(() => {
-          console.log("Document successfully written!");
+          // console.log("Document successfully written!");
         })
         .catch((error) => {
-          console.error("Error writing document: ", error);
+          // console.error("Error writing document: ", error);
           return "ERROR";
         });
 
@@ -144,11 +144,11 @@ const testPaperResolver = {
         createdAt: prevData.data().createdAt,
         published: false,
       };
-      console.log(testPaper);
+      // console.log(testPaper);
       await setDoc(doc(db, "testPapersDraft", testPaper.id), {
         ...testPaper,
       }).catch((error) => {
-        console.error("Error writing document: ", error);
+        // console.error("Error writing document: ", error);
         return "ERROR";
       });
       return "SUCCESS";
@@ -163,19 +163,19 @@ const testPaperResolver = {
         sharedWith: [],
       })
         .then(() => {
-          console.log("Document successfully written!");
+          // console.log("Document successfully written!");
         })
         .catch((error) => {
-          console.error("Error writing document: ", error);
+          // console.error("Error writing document: ", error);
           return "ERROR";
         });
 
       await deleteDoc(doc(db, "testPapersDraft", id))
         .then(() => {
-          console.log("Document successfully deleted!");
+          // console.log("Document successfully deleted!");
         })
         .catch((error) => {
-          console.error("Error deleting document: ", error);
+          // console.error("Error deleting document: ", error);
           return "ERROR";
         });
       return "SUCCESS";
@@ -186,10 +186,10 @@ const testPaperResolver = {
         ...prevData.data(),
         sharedWith,
       };
-      console.log(testPaper);
+      // console.log(testPaper);
       await setDoc(doc(db, "testPapers", id), { ...testPaper }).catch(
         (error) => {
-          console.error("Error writing document: ", error);
+          // console.error("Error writing document: ", error);
           return "ERROR";
         }
       );
@@ -227,10 +227,10 @@ const testPaperResolver = {
         marks: data,
       };
 
-      console.log(testPaper);
+      // console.log(testPaper);
       await setDoc(doc(db, "testPapers", testId), { ...testPaper }).catch(
         (error) => {
-          console.error("Error writing document: ", error);
+          // console.error("Error writing document: ", error);
           return "ERROR";
         }
       );
@@ -240,25 +240,25 @@ const testPaperResolver = {
       if (published) {
         await deleteDoc(doc(db, "testPapers", id))
           .then(() => {
-            console.log("Document successfully deleted!");
+            // console.log("Document successfully deleted!");
           })
           .catch((error) => {
-            console.error("Error deleting document: ", error);
+            // console.error("Error deleting document: ", error);
             return "ERROR";
           });
       } else {
         await deleteDoc(doc(db, "testPapersDraft", id))
           .then(() => {
-            console.log("Document successfully deleted!");
+            // console.log("Document successfully deleted!");
           })
           .catch((error) => {
-            console.error("Error deleting document: ", error);
+            // console.error("Error deleting document: ", error);
             return "ERROR";
           });
       }
 
       await deleteObject(ref(storage, `test_papers/${id}`)).catch((error) => {
-        console.error("Error deleting document: ", error);
+        // console.error("Error deleting document: ", error);
         return "ERROR";
       });
       return "SUCCESS";
