@@ -94,6 +94,7 @@ const studentResolver = {
         password,
         phone,
         grade,
+        batch,
         verificationCode,
       }
     ) => {
@@ -101,16 +102,19 @@ const studentResolver = {
         .then(async (userCredential) => {
           // console.log("USERCREDS", userCredential);
           const userId = userCredential.user.uid;
+          const sId = `SKL_${phone.slice(0, 6)}_${batch}`;
 
           // Create Student
           await setDoc(doc(db, "students", userId), {
             userId,
+            sId,
             firstname,
             middlename,
             lastname,
             email,
             phone,
             grade,
+            batch,
             attendance: { present: 0, absent: 0 },
           })
             .then(() => {
@@ -158,6 +162,7 @@ const studentResolver = {
         lastname,
         phone,
         grade,
+        batch,
         studentInformation,
         guardianInformation,
         siblingInformation,
@@ -171,12 +176,14 @@ const studentResolver = {
       );
       const updatedStudent = {
         userId,
+        sId: studentDetails.data().sId,
         firstname: firstname,
         middlename: middlename,
         lastname: lastname,
         email: studentDetails.data().email,
         phone: phone,
         grade: grade,
+        batch: batch,
         attendance: {
           present: studentDetails.data().attendance.present,
           absent: studentDetails.data().attendance.absent,

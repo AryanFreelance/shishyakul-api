@@ -35,6 +35,19 @@ const attendanceResolver = {
       };
       // console.log(attendance);
 
+      // Check if the existing attendance data is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
+      const attendanceSnapshot = await getDocs(collection(db, "attendance"));
+      attendanceSnapshot.forEach(async (doc) => {
+        const attendanceData = doc.data();
+        const date = new Date(attendanceData.timestamp);
+        const today = new Date();
+        const diffTime = Math.abs(today - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 60) {
+          await deleteDoc(doc.ref);
+        }
+      });
+
       // Check if the attendance has been taken for the day, if yes then show error, else create a new attendance
       const attendanceDoc = doc(db, "attendance", timestamp);
       const attendanceData = await getDoc(attendanceDoc);

@@ -1,12 +1,14 @@
 const studentTypeDef = `#graphql
 type Student {
     userId: ID!
+    sId: ID!
     firstname: String!
     middlename: String
     lastname: String!
     email: String!
     phone: String
     grade: String
+    batch: String
     attendance: StudentAttendance
     studentInformation: StudentInformation
     guardianInformation: GuardianInformation
@@ -35,7 +37,8 @@ type Mutation {
         email: String!,
         password: String!,
         phone: String!,
-        grade: String!
+        grade: String!,
+        batch: String!,
         verificationCode: String!
     ): String!
     updateStudent(
@@ -44,7 +47,8 @@ type Mutation {
         middlename: String,
         lastname: String,
         phone: String,
-        grade: String
+        grade: String,
+        batch: String,
         studentInformation: StudentInformationInput
         guardianInformation: GuardianInformationInput
         siblingInformation: [SiblingInformationInput]
