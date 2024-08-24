@@ -102,7 +102,7 @@ const studentResolver = {
         .then(async (userCredential) => {
           // console.log("USERCREDS", userCredential);
           const userId = userCredential.user.uid;
-          const sId = `SKL_${phone.slice(0, 6)}_${batch}`;
+          const sId = `SKL_${phone.slice(0, 6)}_${batch}_${grade}`;
 
           // Create Student
           await setDoc(doc(db, "students", userId), {
@@ -174,9 +174,13 @@ const studentResolver = {
           return "ERROR";
         }
       );
+      let sId = studentDetails.data().sId;
+      if (!sId) {
+        sId = `SKL_${phone.slice(0, 6)}_${batch}_${grade}`;
+      }
       const updatedStudent = {
         userId,
-        sId: studentDetails.data().sId,
+        sId,
         firstname: firstname,
         middlename: middlename,
         lastname: lastname,
