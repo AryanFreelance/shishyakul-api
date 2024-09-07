@@ -111,21 +111,25 @@ const feesResolver = {
           // console.log("Error getting document:", error);
           return "ERROR";
         });
-      pdfId = pdfId
-        .split("/")
-        [pdfId.split("/").length - 1].split("?")[0]
-        .substring(6, 16);
+      if (mode !== "cash") {
+        pdfId = pdfId
+          .split("/")
+          [pdfId.split("/").length - 1].split("?")[0]
+          .substring(6, 16);
 
-      // Delete Fee File
-      mode !== "cash" &&
-        (await deleteObject(ref(storage, `fee/${pdfId}`))
+        await deleteObject(ref(storage, `fee/${pdfId}`))
           .then(() => {
             // console.log("File deleted successfully");
           })
           .catch((error) => {
             // console.error("Error deleting file: ", error);
             return "ERROR";
-          }));
+          });
+      }
+
+      // Delete Fee File
+      // mode !== "cash" &&
+      //   ();
 
       // Delete Fee Document
       await deleteDoc(doc(db, "fees", userId, "fee", id))
