@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../db/index.js";
+import { auth, db, storage } from "../db/index.js";
 import {
   collection,
   deleteDoc,
@@ -7,27 +7,39 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
+import { deleteObject, ref } from "firebase/storage";
+
+// Firestore Database "studs" Collection Structure
+
+// Collection - studs / Document - <AcademicYear> / Collection - <Grade> / Document - <UserID> / Fields - { data }
 
 const studentResolver = {
   Query: {
-    students: async () => {
-      const students = [];
-      const studentsCollection = collection(db, "students");
-      const studentsSnapshot = await getDocs(studentsCollection);
-      // Return the students in ascending order of their grades
-      studentsSnapshot.forEach((doc) => {
-        students.push(doc.data());
-      });
-      students.sort((a, b) => {
-        return a.grade - b.grade;
-      });
-      return students;
+    ayStudents: async (_, { ay }) => {
+      const ayDoc = doc(db, "studs", ay);
+      const gradeCollections = await Promise.all(
+        ["8", "9", "10", "11", "12"].map((grade) =>
+          getDocs(collection(ayDoc, grade)).then((gradeDocs) =>
+            gradeDocs.docs.map((gradeDoc) => ({ ...gradeDoc.data() }))
+          )
+        )
+      ).then((gradeCollections) => gradeCollections.flat());
+
+      console.log("GRADE COLLECTION", gradeCollections);
+
+      return gradeCollections;
     },
-    student: async (_, { userId }) => {
-      const student = await getDoc(doc(db, "students", userId));
-      return student.data();
+    gStudents: async (_, { ay, grade }) => {
+      const gStudents = await getDocs(collection(db, "studs", ay, grade));
+      return gStudents.docs.map((doc) => doc.data());
+    },
+    student: async (_, { ay, grade, userId }) => {
+      const studentRef = doc(db, "studs", ay, grade, userId);
+      const studentSnap = await getDoc(studentRef);
+      return studentSnap.exists() ? studentSnap.data() : null;
     },
   },
   Mutation: {
@@ -93,65 +105,39 @@ const studentResolver = {
         email,
         password,
         phone,
+        ay,
         grade,
-        batch,
         verificationCode,
       }
     ) => {
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(async (userCredential) => {
-          // console.log("USERCREDS", userCredential);
-          const userId = userCredential.user.uid;
-          const sId = `SKL_${phone.slice(0, 6)}_${batch}_${grade}`;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        const userId = userCredential.user.uid;
 
-          // Create Student
-          await setDoc(doc(db, "students", userId), {
+        // Create Student
+        await Promise.all([
+          setDoc(doc(db, "studs", ay, grade, userId), {
             userId,
-            sId,
             firstname,
             middlename,
             lastname,
             email,
             phone,
+            ay,
             grade,
-            batch,
             attendance: { present: 0, absent: 0 },
-          })
-            .then(() => {
-              // console.log("Document written with ID: ", userId);
-            })
-            .catch((error) => {
-              // console.error("Error adding document: ", error);
-              message = false;
-              return "ERROR";
-            });
-
-          // Delete TempStudent
-          await deleteDoc(doc(db, "tempstudents", email))
-            .then(() => {
-              // console.log("Document deleted with ID: ", email);
-            })
-            .catch((error) => {
-              // console.error("Error deleting document: ", error);
-              return "ERROR";
-            });
-
-          // Delete Verification
-          await deleteDoc(doc(db, "verifications", verificationCode))
-            .then(() => {
-              // console.log("Document deleted with ID: ", verificationCode);
-            })
-            .catch((error) => {
-              // console.error("Error deleting document: ", error);
-              return "ERROR";
-            });
-        })
-        .catch((error) => {
-          // console.log(error);
-          return "ERROR";
-        });
-
-      return "SUCCESS";
+          }),
+          deleteDoc(doc(db, "tempstudents", email)),
+          deleteDoc(doc(db, "verifications", verificationCode)),
+        ]);
+        return "SUCCESS";
+      } catch (error) {
+        return "ERROR";
+      }
     },
     updateStudent: async (
       _,
@@ -161,6 +147,7 @@ const studentResolver = {
         middlename,
         lastname,
         phone,
+        ay,
         grade,
         batch,
         studentInformation,
@@ -168,62 +155,81 @@ const studentResolver = {
         siblingInformation,
       }
     ) => {
-      const studentDetails = await getDoc(doc(db, "students", userId)).catch(
-        (error) => {
-          // console.error("Error getting document: ", error);
-          return "ERROR";
-        }
-      );
-      let sId = studentDetails.data().sId;
-      if (!sId) {
-        sId = `SKL_${phone.slice(0, 6)}_${batch}_${grade}`;
-      }
-      const updatedStudent = {
-        userId,
-        sId,
-        firstname: firstname,
-        middlename: middlename,
-        lastname: lastname,
-        email: studentDetails.data().email,
-        phone: phone,
-        grade: grade,
-        batch: batch,
-        attendance: {
-          present: studentDetails.data().attendance.present,
-          absent: studentDetails.data().attendance.absent,
-        },
-        studentInformation: studentInformation,
-        guardianInformation: guardianInformation,
-        siblingInformation: siblingInformation,
-      };
-
-      // console.log("UPDATEDSTUDENT", updatedStudent);
-
-      await setDoc(doc(db, "students", userId), { ...updatedStudent }).catch(
-        (error) => {
-          // console.error("Error adding document: ", error);
-          return "ERROR";
-        }
-      );
-
-      return "SUCCESS";
-    },
-    deleteStudent: async (_, { userId }) => {
-      await deleteDoc(doc(db, "students", userId)).catch((error) => {
-        // console.error("Error removing document: ", error);
+      const studentRef = doc(db, "studs", ay, grade, userId);
+      const studentSnap = await getDoc(studentRef).catch((error) => {
         return "ERROR";
       });
 
-      await getDocs(collection(db, "fees", userId, "fee"))
-        .then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            deleteDoc(doc.ref);
-          });
-        })
-        .catch((error) => {
-          // console.error("Error removing document: ", error);
-          return "ERROR";
-        });
+      if (studentSnap === "ERROR") return "ERROR";
+
+      let data = {
+        firstname: firstname || studentSnap.data().firstname,
+        middlename: middlename || studentSnap.data().middlename,
+        lastname: lastname || studentSnap.data().lastname,
+        phone: phone || studentSnap.data().phone,
+        ay,
+        grade,
+      };
+
+      if (batch) data.batch = batch;
+      if (studentInformation) data.studentInformation = studentInformation;
+      if (guardianInformation) data.guardianInformation = guardianInformation;
+      if (siblingInformation) data.siblingInformation = siblingInformation;
+
+      console.log("DATA", data);
+
+      await updateDoc(doc(db, "studs", ay, grade, userId), data, {
+        merge: true,
+      });
+
+      return "SUCCESS";
+    },
+    deleteStudent: async (_, { ay, grade, userId }) => {
+      // Check if the Student Exists in the Database
+      const student = await getDoc(doc(db, "studs", ay, grade, userId));
+      if (!student.exists()) return "ERROR";
+
+      // Delete the Student Document from the database
+      await deleteDoc(doc(db, "studs", ay, grade, userId)).catch((error) => {
+        // console.error("Error removing document: ", error);
+        return "STUDENTERROR";
+      });
+
+      // Get the fees document of the students and delete the images of fees one by one
+      const feesCollection = collection(db, "fees", userId, "fee");
+      const feesSnapshot = await getDocs(feesCollection);
+      feesSnapshot.forEach((doc) => {
+        const feeData = doc.data();
+        console.log(feeData);
+        let imageName = null;
+
+        if (feeData.mode === "cheque") {
+          imageName = feeData.chequeImgUrl
+            .split("/")
+            .slice(-1)[0]
+            .split("?")[0]
+            .substring(6, 16);
+        } else if (feeData.mode === "upi") {
+          imageName = feeData.upiImgUrl
+            .split("/")
+            .slice(-1)[0]
+            .split("?")[0]
+            .substring(6, 16);
+        }
+
+        console.log(imageName);
+
+        if (imageName) {
+          deleteObject(ref(storage, `fee/${imageName}`));
+        }
+      });
+
+      // After deleting the Images from Storage, delete the entire fees document from the userId document
+
+      await deleteDoc(doc(db, "fees", userId)).catch((error) => {
+        // console.error("Error removing document: ", error);
+        return "FEEERROR";
+      });
 
       return "SUCCESS";
     },
@@ -235,12 +241,11 @@ const studentResolver = {
         const feesCollection = collection(db, "fees", parent.userId, "fee");
         const feesSnapshot = await getDocs(feesCollection);
         feesSnapshot.forEach((doc) => {
-          // console.log(doc.data());
           studentFees.push(doc.data());
         });
         return studentFees;
       } catch (error) {
-        // console.log(error);
+        console.log(error);
       }
     },
   },
