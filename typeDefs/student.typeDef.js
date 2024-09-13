@@ -22,9 +22,12 @@ type StudentAttendance {
 }
 
 type Query {
+    studentInfo(userId: ID!): Student
+    students(ay: String!, grade: String): [Student]
     ayStudents(ay: String!): [Student]
     gStudents(ay: String!, grade: String!): [Student]
     student(ay: String!, grade: String!, userId: ID!): Student
+    academicYears: [String]
 }
 
 type Mutation {
@@ -49,7 +52,9 @@ type Mutation {
         lastname: String,
         phone: String,
         ay: String!,
+        newAy: String,
         grade: String!,
+        newGrade: String,
         batch: String,
         studentInformation: StudentInformationInput
         guardianInformation: GuardianInformationInput
