@@ -1,13 +1,13 @@
 import cron from "cron";
 import https from "https";
 
-const URL = "https://shishyakul-api.onrender.com/";
+const URL = "https://api.shishyakul.in";
 
-const job = new cron.CronJob("*/15 * * * *", function () {
+const job = new cron.CronJob("*/14 * * * *", function () {
   const currentHour = new Date().getHours();
 
-  // Check if the current hour is between 8 AM and 11 PM
-  if (currentHour >= 8 && currentHour < 23) {
+  // Check if the current hour is between 8 AM and 8 PM
+  if (currentHour >= 8 && currentHour < 20) {
     https
       .get(URL, (res) => {
         if (res.statusCode === 200) {
