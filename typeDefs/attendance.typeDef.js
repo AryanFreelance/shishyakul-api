@@ -1,15 +1,18 @@
 const attendanceTypeDef = `#graphql
   type Attendance {
     timestamp: ID!
+    date: String
     present: [ID]
     absent: [ID]
+    createdAt: String
+    updatedAt: String
   }
   type Query {
-    attendances: [Attendance]
-    attendance(timestamp: String!): Attendance
+    gdattendance(ay: String!, grade: String): [Attendance]
+    attendance(ay: String!, grade: String!, timestamp: String!): Attendance
   }
   type Mutation {
-    createAttendance(timestamp: ID!, present: [ID]!, absent: [ID]!): String
+    createAttendance(ay: String!, grade: String!, timestamp: ID!, date: String!, present: [ID]!, absent: [ID]!): String
     updateAttendance(timestamp: ID!, present: [ID], absent: [ID]): String
     resetAttendance: String
   }

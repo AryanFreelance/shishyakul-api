@@ -13,16 +13,16 @@ type Fees {
     upiId: String
     chequeImgUrl: String
     upiImgUrl: String
+    remark: String
 }
 
 type Query {
     fees: [Fees]
-    # fee(id: ID!): Fees
-    # studFees(userId: ID!): [Fees]
 }
 
 type Mutation {
     createFee(id: ID!, userId: String!, email: String!, feesPaid: Int!, paidOn: String!, month: String!, year: String!, mode: String!, chequeRefNo: String, upiId: String, chequeImgUrl: String, upiImgUrl: String): String!
+    updateFee(id: ID!, userId: String!, remark: String!): String!
     deleteFee(userId: ID!, id: ID!): String!
 }
 `;

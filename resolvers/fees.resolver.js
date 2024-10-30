@@ -5,9 +5,11 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
-import { db, storage } from "../db/index.js";
-import { deleteObject, ref } from "firebase/storage";
+import { db, database } from "../db/index.js";
+import deleteObjectFromStorage from "../actions/storage/deleteObjectFromStorage.js";
+import { ref, set } from "firebase/database";
 
 const feesResolver = {
   Query: {
@@ -93,6 +95,30 @@ const feesResolver = {
         });
       return "SUCCESS";
     },
+    updateFee: async (_, { id, userId, remark }) => {
+      // await setDoc(doc(db, "fees", userId, "fee", id), {
+      //   id,
+      //   userId,
+      //   remark,
+      // })
+      //   .then(() => {
+      //     // console.log("Document written with ID: ", id);
+      //   })
+      //   .catch((error) => {
+      //     // console.error("Error adding document: ", error);
+      //     return "ERROR";
+      //   });
+
+      // Set the "capital" field of the city 'DC'
+      await updateDoc(doc(db, "fees", userId, "fee", id), {
+        remark,
+      }).catch((error) => {
+        console.error("Error adding document: ", error);
+        return "ERROR";
+      });
+
+      return "SUCCESS";
+    },
     deleteFee: async (_, { userId, id }) => {
       let pdfId = "";
       let mode = "";
@@ -117,19 +143,10 @@ const feesResolver = {
           [pdfId.split("/").length - 1].split("?")[0]
           .substring(6, 16);
 
-        await deleteObject(ref(storage, `fee/${pdfId}`))
-          .then(() => {
-            // console.log("File deleted successfully");
-          })
-          .catch((error) => {
-            // console.error("Error deleting file: ", error);
-            return "ERROR";
-          });
+        if (!deleteObjectFromStorage(`fee/${pdfId}`)) {
+          return "ERROR";
+        }
       }
-
-      // Delete Fee File
-      // mode !== "cash" &&
-      //   ();
 
       // Delete Fee Document
       await deleteDoc(doc(db, "fees", userId, "fee", id))

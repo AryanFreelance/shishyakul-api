@@ -1,4 +1,13 @@
-import { db } from "../db/index.js";
+import {
+  child,
+  get,
+  ref,
+  remove,
+  update,
+  runTransaction as dbTransaction,
+  set,
+} from "firebase/database";
+import { database, db } from "../db/index.js";
 import {
   collection,
   deleteDoc,
@@ -8,85 +17,164 @@ import {
   setDoc,
   runTransaction,
 } from "firebase/firestore";
+import { isCompositeType } from "graphql";
+import moment from "moment";
 
 const attendanceResolver = {
   Query: {
-    attendances: async () => {
-      const attendance = [];
-      const attendanceSnapshot = await getDocs(collection(db, "attendance"));
-      attendanceSnapshot.forEach((doc) => {
-        attendance.push(doc.data());
-      });
-      // console.log(attendance);
+    gdattendance: async (_, { ay, grade }) => {
+      // const attendance = [];
+
+      const attendance = await get(child(ref(database), `attendance`))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log("DATA", data[ay][grade]);
+            console.log("OBJVAL", Object.values(data[ay][grade]));
+            return Object.values(data[ay][grade]);
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
       return attendance;
     },
-    attendance: async (_, { timestamp }) => {
-      const attendance = await getDoc(doc(db, "attendance", timestamp));
-      return attendance.data();
+    attendance: async (_, { ay, grade, timestamp }) => {
+      let attendance;
+      await get(child(ref(database), `attendance/${ay}/${grade}`))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log("DATA", data);
+            // attendance.push(...data[ay][grade]);
+            Object.values(data)?.forEach((d) => {
+              console.log("D", d);
+              if (d.timestamp === timestamp) {
+                console.log("D TIMESTAMP", d);
+                attendance = d;
+                return d;
+              }
+            });
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      console.log("ATTENDANCE", attendance);
+
+      return attendance;
     },
   },
   Mutation: {
-    createAttendance: async (_, { timestamp, present, absent }) => {
+    createAttendance: async (
+      _,
+      { ay, grade, timestamp, date, present, absent }
+    ) => {
       const attendance = {
         timestamp,
+        date,
         present,
         absent,
-        createdAt: new Date().toLocaleString(),
+        createdAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
       };
-      // console.log(attendance);
+      console.log(attendance);
 
       // Check if the existing attendance data is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
-      const attendanceSnapshot = await getDocs(collection(db, "attendance"));
-      attendanceSnapshot.forEach(async (doc) => {
-        const attendanceData = doc.data();
-        const date = new Date(attendanceData.timestamp);
-        const today = new Date();
-        const diffTime = Math.abs(today - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays > 60) {
-          await deleteDoc(doc.ref);
-        }
-      });
-
-      // Check if the attendance has been taken for the day, if yes then show error, else create a new attendance
-      const attendanceDoc = doc(db, "attendance", timestamp);
-      const attendanceData = await getDoc(attendanceDoc);
-      if (attendanceData.exists()) return "EXISTED";
-
-      await setDoc(doc(db, "attendance", attendance.timestamp), attendance)
-        .then((docRef) => {
-          // console.log("Document written with ID: ", docRef);
+      const attendanceSnapshot = await get(
+        child(ref(database), `attendance/${ay}/${grade}`)
+      )
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            console.log("ATTENDANCE DATA", snapshot.val());
+            return snapshot.val();
+          } else {
+            console.log("No data available");
+          }
         })
         .catch((error) => {
-          // console.error("Error adding document: ", error);
-          return "ERROR";
+          console.error(error);
         });
+      console.log("ATTENDANCESNAPSHOT", attendanceSnapshot);
+
+      if (attendanceSnapshot) {
+        let attendanceLength = Object.values(attendanceSnapshot).length;
+        Object.keys(attendanceSnapshot).forEach(async (key) => {
+          // If the length of the object is more than 60 then delete the object
+          console.log("KEY", Object.values(attendanceSnapshot).length);
+          if (attendanceLength-- > 100) {
+            console.log("ATTENDANCELENGTH", attendanceLength);
+            await remove(ref(database, `attendance/${ay}/${grade}/${key}`));
+          }
+
+          console.log("KEY", key);
+        });
+      }
+
+      // attendanceSnapshot.forEach(async (doc) => {
+      //   const attendanceData = doc.data();
+      //   const date = new Date(attendanceData.timestamp);
+      //   const today = new Date();
+      //   const diffTime = Math.abs(today - date);
+      //   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      //   if (diffDays > 60) {
+      //     await deleteDoc(doc.ref);
+      //   }
+      // });
+
+      // Check if the attendance has been taken for the day, if yes then show error, else create a new attendance
+      if (attendanceSnapshot[timestamp]) return "EXISTED";
+
+      // await setDoc(doc(db, "attendance", timestamp), attendance)
+      //   .then((docRef) => {
+      //     console.log("Document written with ID: ", docRef);
+      //   })
+      //   .catch((error) => {
+      //     console.error("Error adding document: ", error);
+      //     return "ERROR";
+      //   });
+
+      await set(
+        ref(database, `attendance/${ay}/${grade}/${timestamp}`),
+        attendance
+      );
 
       present.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            present: studentData.attendance.present + 1,
-          },
-        });
+        await dbTransaction(
+          ref(database, `studs/${ay}/${grade}/${studentId}`),
+          (stud) => {
+            if (stud) {
+              if (stud?.attendance?.present) {
+                stud.attendance.present++;
+              } else {
+                stud.attendance.present = 1;
+              }
+            }
+            return stud;
+          }
+        );
       });
 
       absent.forEach(async (studentId) => {
-        const studentDoc = doc(db, "students", studentId);
-        const student = await getDoc(studentDoc);
-        const studentData = student.data();
-        await setDoc(studentDoc, {
-          ...studentData,
-          attendance: {
-            ...studentData.attendance,
-            absent: studentData.attendance.absent + 1,
-          },
-        });
+        await dbTransaction(
+          ref(database, `studs/${ay}/${grade}/${studentId}`),
+          (stud) => {
+            if (stud) {
+              if (stud?.attendance?.absent) {
+                stud.attendance.absent++;
+              } else {
+                stud.attendance.absent = 1;
+              }
+            }
+            return stud;
+          }
+        );
       });
 
       return "SUCCESS";
@@ -170,20 +258,39 @@ const attendanceResolver = {
     },
     resetAttendance: async () => {
       // Reset Attendance for all students
-      const attendanceSnapshot = await getDocs(collection(db, "attendance"));
-      attendanceSnapshot.forEach(async (doc) => {
-        await deleteDoc(doc.ref);
+      await remove(ref(database, "attendance")).catch((error) => {
+        console.error("Error removing document: ", error);
+        return "ERROR";
       });
 
-      const students = await getDocs(collection(db, "students"));
-      students.forEach(async (student) => {
-        const studentData = student.data();
-        await setDoc(doc(db, "students", studentData.userId), {
-          ...studentData,
-          attendance: {
-            present: 0,
-            absent: 0,
-          },
+      const studentsAttendance = await get(child(ref(database), `studs`))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            // console.log(snapshot.val());
+            return snapshot.val();
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      Object.keys(studentsAttendance).forEach((key) => {
+        Object.values(studentsAttendance[key]).forEach(async (student) => {
+          Object.values(student).forEach(async (stud) => {
+            console.log("STUDENT", stud);
+            console.log(`studs/${key}/${stud.grade}/${stud.userId}`);
+            await update(
+              ref(database, `studs/${key}/${stud.grade}/${stud.userId}`),
+              {
+                attendance: {
+                  present: 0,
+                  absent: 0,
+                },
+              }
+            );
+          });
         });
       });
       return "SUCCESS";
