@@ -72,21 +72,14 @@ const attendanceResolver = {
     },
   },
   Mutation: {
-    createAttendance: async (
+    attendanceHandler: async (
       _,
       { ay, grade, timestamp, date, present, absent }
     ) => {
-      const attendance = {
-        timestamp,
-        date,
-        present,
-        absent,
-        createdAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-      };
-      console.log(attendance);
+      // If the attendance data is already available then just update it else create a new attendance record for the specified timestamp.
+      let attendanceData = {};
+      let isExists = false;
 
-      // Check if the existing attendance data is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
       const attendanceSnapshot = await get(
         child(ref(database), `attendance/${ay}/${grade}`)
       )
@@ -101,6 +94,28 @@ const attendanceResolver = {
         .catch((error) => {
           console.error(error);
         });
+
+      if (attendanceSnapshot[timestamp]) {
+        attendanceData = {
+          ...attendanceSnapshot[timestamp],
+          present,
+          absent,
+          updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        };
+        isExists = true;
+      } else {
+        attendanceData = {
+          timestamp,
+          date,
+          present,
+          absent,
+          createdAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+          updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        };
+      }
+      console.log("ATTTENDANCE DATA", attendanceData);
+
+      // Check if the attendance data of a particular grade students is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
       console.log("ATTENDANCESNAPSHOT", attendanceSnapshot);
 
       if (attendanceSnapshot) {
@@ -128,54 +143,141 @@ const attendanceResolver = {
       //   }
       // });
 
-      // Check if the attendance has been taken for the day, if yes then show error, else create a new attendance
-      if (attendanceSnapshot[timestamp]) return "EXISTED";
+      if (isExists) {
+        // If the attendance record exists then update the record and then update the student's attendance records, just like done in the updateAttendance mutation
+        await update(
+          ref(database, `attendance/${ay}/${grade}/${timestamp}`),
+          attendanceData
+        )
+          .then(() => {
+            // Get NewPresent & NewAbsent
+            let prevAttendanceData = attendanceSnapshot[timestamp];
+            console.log("PREVATTENDANCE", prevAttendanceData);
+            let { present: prevPresent, absent: prevAbsent } =
+              prevAttendanceData;
 
-      // await setDoc(doc(db, "attendance", timestamp), attendance)
-      //   .then((docRef) => {
-      //     console.log("Document written with ID: ", docRef);
-      //   })
-      //   .catch((error) => {
-      //     console.error("Error adding document: ", error);
-      //     return "ERROR";
-      //   });
+            let newPresent = present.filter(
+              (studentId) => !prevPresent.includes(studentId)
+            );
+            let newAbsent = absent.filter(
+              (studentId) => !prevAbsent.includes(studentId)
+            );
 
-      await set(
-        ref(database, `attendance/${ay}/${grade}/${timestamp}`),
-        attendance
-      );
+            newPresent.forEach(async (studentId) => {
+              await dbTransaction(
+                ref(database, `studs/${ay}/${grade}/${studentId}`),
+                (stud) => {
+                  if (stud) {
+                    if (stud?.attendance?.present) {
+                      stud.attendance.present++;
+                    } else {
+                      stud.attendance.present = 1;
+                    }
 
-      present.forEach(async (studentId) => {
-        await dbTransaction(
-          ref(database, `studs/${ay}/${grade}/${studentId}`),
-          (stud) => {
-            if (stud) {
-              if (stud?.attendance?.present) {
-                stud.attendance.present++;
-              } else {
-                stud.attendance.present = 1;
-              }
-            }
-            return stud;
-          }
+                    stud.attendance.absent = Math.max(
+                      0,
+                      stud.attendance.absent - 1
+                    );
+                  }
+                  return stud;
+                }
+              );
+            });
+
+            newAbsent.forEach(async (studentId) => {
+              await dbTransaction(
+                ref(database, `studs/${ay}/${grade}/${studentId}`),
+                (stud) => {
+                  if (stud) {
+                    if (stud?.attendance?.absent) {
+                      stud.attendance.absent++;
+                    } else {
+                      stud.attendance.absent = 1;
+                    }
+                    stud.attendance.present = Math.max(
+                      0,
+                      stud.attendance.present - 1
+                    );
+                  }
+                  return stud;
+                }
+              );
+            });
+
+            // present.forEach(async (studentId) => {
+            //   await dbTransaction(
+            //     ref(database, `studs/${ay}/${grade}/${studentId}`),
+            //     (stud) => {
+            //       if (stud) {
+            //         if (stud?.attendance?.present) {
+            //           stud.attendance.present++;
+            //         } else {
+            //           stud.attendance.present = 1;
+            //         }
+            //       }
+            //       return stud;
+            //     }
+            //   );
+            // });
+
+            // absent.forEach(async (studentId) => {
+            //   await dbTransaction(
+            //     ref(database, `studs/${ay}/${grade}/${studentId}`),
+            //     (stud) => {
+            //       if (stud) {
+            //         if (stud?.attendance?.absent) {
+            //           stud.attendance.absent++;
+            //         } else {
+            //           stud.attendance.absent = 1;
+            //         }
+            //       }
+            //       return stud;
+            //     }
+            //   );
+            // });
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      } else {
+        // If the attendance record is not present then create a new record of the attendance
+        await set(
+          ref(database, `attendance/${ay}/${grade}/${timestamp}`),
+          attendanceData
         );
-      });
 
-      absent.forEach(async (studentId) => {
-        await dbTransaction(
-          ref(database, `studs/${ay}/${grade}/${studentId}`),
-          (stud) => {
-            if (stud) {
-              if (stud?.attendance?.absent) {
-                stud.attendance.absent++;
-              } else {
-                stud.attendance.absent = 1;
+        present.forEach(async (studentId) => {
+          await dbTransaction(
+            ref(database, `studs/${ay}/${grade}/${studentId}`),
+            (stud) => {
+              if (stud) {
+                if (stud?.attendance?.present) {
+                  stud.attendance.present++;
+                } else {
+                  stud.attendance.present = 1;
+                }
               }
+              return stud;
             }
-            return stud;
-          }
-        );
-      });
+          );
+        });
+
+        absent.forEach(async (studentId) => {
+          await dbTransaction(
+            ref(database, `studs/${ay}/${grade}/${studentId}`),
+            (stud) => {
+              if (stud) {
+                if (stud?.attendance?.absent) {
+                  stud.attendance.absent++;
+                } else {
+                  stud.attendance.absent = 1;
+                }
+              }
+              return stud;
+            }
+          );
+        });
+      }
 
       return "SUCCESS";
     },

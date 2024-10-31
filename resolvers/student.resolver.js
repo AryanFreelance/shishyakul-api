@@ -73,13 +73,6 @@ const studentResolver = {
       return finalStudents;
     },
     ayStudents: async (_, { ay }) => {
-      /**
-       * Retrieves a list of students for a specific academic year.
-       *
-       * @param {string} ay - The academic year for which to retrieve students.
-       * @return {array} An array of student objects.
-       */
-
       let studentData,
         finalStudents = [];
 
@@ -133,9 +126,6 @@ const studentResolver = {
       return finalStudents;
     },
     student: async (_, { ay, grade, userId }) => {
-      // const studentRef = doc(db, "studs", ay, grade, userId);
-      // const studentSnap = await getDoc(studentRef);
-      // return studentSnap.exists() ? studentSnap.data() : null;
       let studentData;
 
       const studentRef = ref(
@@ -157,9 +147,6 @@ const studentResolver = {
       return studentData;
     },
     academicYears: async () => {
-      // const academicYears = await getDoc(doc(db, "studs", "AcademicYears"));
-      // console.log("ACADEMICYEARS", academicYears.data().ay);
-      // return academicYears.data().ay;
       let studentData;
 
       const studentRef = ref(database, "studs");
@@ -291,18 +278,23 @@ const studentResolver = {
         }
         const ayStart = parseInt(aySplit[0]);
         const ayEnd = parseInt(aySplit[1]);
+        console.log("AY", ayStart, ayEnd);
         if (ayStart < 2008 || ayEnd > new Date().getFullYear() + 1) {
-          return "INVALID AY FORMAT";
+          return "YEAR SHOULD BE GREATER THAN 2008 AND LESS THAN THE NEXT YEAR";
         }
 
         if (ayStart > ayEnd) {
-          return "INVALID AY FORMAT";
+          return "START YEAR CANNOT BE GREATER THAN ENDING YEAR";
         }
 
         if (ayStart + 1 !== ayEnd) {
           return "INVALID AY FORMAT";
         }
       }
+      console.log("NEWAY", newAy);
+      console.log("AY", ay);
+      console.log("GRADE", grade);
+      console.log("NEWGRADE", newGrade);
 
       const studentRef = ref(
         database,
