@@ -47,7 +47,7 @@ const studentResolver = {
           studentData = snapshot.val();
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -85,7 +85,7 @@ const studentResolver = {
           studentData = snapshot.val();
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -115,7 +115,7 @@ const studentResolver = {
           studentData = snapshot.val();
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -140,7 +140,7 @@ const studentResolver = {
           studentData = snapshot.val();
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -158,7 +158,7 @@ const studentResolver = {
           studentData = snapshot.val();
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -216,12 +216,9 @@ const studentResolver = {
       }
     ) => {
       try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        const userId = userCredential.user.uid;
+        const userId = (
+          await createUserWithEmailAndPassword(auth, email, password)
+        ).user.uid;
 
         // Create Student
         await Promise.all([
@@ -247,7 +244,7 @@ const studentResolver = {
           deleteDoc(doc(db, "tempstudents", email)),
           deleteDoc(doc(db, "verifications", verificationCode)),
         ]);
-        console.log("STUDENT CREATED SUCCESSFULLY");
+        // console.log("STUDENT CREATED SUCCESSFULLY");
         return "SUCCESS";
       } catch (error) {
         return "ERROR";
@@ -278,7 +275,7 @@ const studentResolver = {
         }
         const ayStart = parseInt(aySplit[0]);
         const ayEnd = parseInt(aySplit[1]);
-        console.log("AY", ayStart, ayEnd);
+        // console.log("AY", ayStart, ayEnd);
         if (ayStart < 2008 || ayEnd > new Date().getFullYear() + 1) {
           return "YEAR SHOULD BE GREATER THAN 2008 AND LESS THAN THE NEXT YEAR";
         }
@@ -291,23 +288,23 @@ const studentResolver = {
           return "INVALID AY FORMAT";
         }
       }
-      console.log("NEWAY", newAy);
-      console.log("AY", ay);
-      console.log("GRADE", grade);
-      console.log("NEWGRADE", newGrade);
+      // console.log("NEWAY", newAy);
+      // console.log("AY", ay);
+      // console.log("GRADE", grade);
+      // console.log("NEWGRADE", newGrade);
 
       const studentRef = ref(
         database,
         "studs/" + ay + "/" + grade + "/" + userId
       );
       const studentSnap = await get(studentRef).catch((error) => {
-        console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+        // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
         return "ERROR";
       });
 
       if (studentSnap === "ERROR") return "ERROR";
 
-      console.log("SNAPSHOT VAL", studentSnap.val());
+      // console.log("SNAPSHOT VAL", studentSnap.val());
 
       const data = {
         ...studentSnap.val(),
@@ -324,11 +321,11 @@ const studentResolver = {
       if (guardianInformation) data.guardianInformation = guardianInformation;
       if (siblingInformation) data.siblingInformation = siblingInformation;
 
-      console.log("DATA", data);
+      // console.log("DATA", data);
 
       if (newAy || newGrade) {
         await remove(studentRef).catch((error) => {
-          console.log("ERROR WHILE REMOVING", error);
+          // console.log("ERROR WHILE REMOVING", error);
           return "ERROR";
         });
         const updatedStudentRef = ref(
@@ -336,7 +333,7 @@ const studentResolver = {
           "studs/" + data.ay + "/" + data.grade + "/" + userId
         );
         await update(updatedStudentRef, data).catch((error) => {
-          console.log("ERROR WHILE UPDATING", error);
+          // console.log("ERROR WHILE UPDATING", error);
           return "ERROR";
         });
 
@@ -345,20 +342,22 @@ const studentResolver = {
           lastname: data.lastname,
           ay: data.ay,
           grade: data.grade,
-        }).then(() => console.log("STUDENT UPDATED SUCCESSFULLY"));
+        });
+        // .then(() => console.log("STUDENT UPDATED SUCCESSFULLY"));
 
         return "SUCCESS";
       }
 
       await update(studentRef, data).catch((error) => {
-        console.log("ERROR WHILE UPDATING", error);
+        // console.log("ERROR WHILE UPDATING", error);
         return "ERROR";
       });
 
       await updateDoc(doc(db, "studs", userId), {
         firstname: data.firstname,
         lastname: data.lastname,
-      }).then(() => console.log("STUDENT UPDATED SUCCESSFULLY"));
+      });
+      // .then(() => console.log("STUDENT UPDATED SUCCESSFULLY"));
 
       return "SUCCESS";
     },
@@ -370,7 +369,7 @@ const studentResolver = {
           if (!snapshot.exists()) return "ERROR";
         })
         .catch((error) => {
-          console.log("ERROR WHILE FETCHING STUDENT DATA", error);
+          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
           return "ERROR";
         });
 
@@ -416,7 +415,7 @@ const studentResolver = {
         });
         return studentFees;
       } catch (error) {
-        console.log(error);
+        // console.log(error);
       }
     },
   },

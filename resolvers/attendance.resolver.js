@@ -29,11 +29,11 @@ const attendanceResolver = {
         .then((snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            console.log("DATA", data[ay][grade]);
-            console.log("OBJVAL", Object.values(data[ay][grade]));
+            // console.log("DATA", data[ay][grade]);
+            // console.log("OBJVAL", Object.values(data[ay][grade]));
             return Object.values(data[ay][grade]);
           } else {
-            console.log("No data available");
+            // console.log("No data available");
           }
         })
         .catch((error) => {
@@ -48,25 +48,25 @@ const attendanceResolver = {
         .then((snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            console.log("DATA", data);
+            // console.log("DATA", data);
             // attendance.push(...data[ay][grade]);
             Object.values(data)?.forEach((d) => {
-              console.log("D", d);
+              // console.log("D", d);
               if (d.timestamp === timestamp) {
-                console.log("D TIMESTAMP", d);
+                // console.log("D TIMESTAMP", d);
                 attendance = d;
                 return d;
               }
             });
           } else {
-            console.log("No data available");
+            // console.log("No data available");
           }
         })
         .catch((error) => {
           console.error(error);
         });
 
-      console.log("ATTENDANCE", attendance);
+      // console.log("ATTENDANCE", attendance);
 
       return attendance;
     },
@@ -85,10 +85,10 @@ const attendanceResolver = {
       )
         .then((snapshot) => {
           if (snapshot.exists()) {
-            console.log("ATTENDANCE DATA", snapshot.val());
+            // console.log("ATTENDANCE DATA", snapshot.val());
             return snapshot.val();
           } else {
-            console.log("No data available");
+            // console.log("No data available");
           }
         })
         .catch((error) => {
@@ -113,22 +113,22 @@ const attendanceResolver = {
           updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         };
       }
-      console.log("ATTTENDANCE DATA", attendanceData);
+      // console.log("ATTTENDANCE DATA", attendanceData);
 
       // Check if the attendance data of a particular grade students is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
-      console.log("ATTENDANCESNAPSHOT", attendanceSnapshot);
+      // console.log("ATTENDANCESNAPSHOT", attendanceSnapshot);
 
       if (attendanceSnapshot) {
         let attendanceLength = Object.values(attendanceSnapshot).length;
         Object.keys(attendanceSnapshot).forEach(async (key) => {
           // If the length of the object is more than 60 then delete the object
-          console.log("KEY", Object.values(attendanceSnapshot).length);
+          // console.log("KEY", Object.values(attendanceSnapshot).length);
           if (attendanceLength-- > 100) {
-            console.log("ATTENDANCELENGTH", attendanceLength);
+            // console.log("ATTENDANCELENGTH", attendanceLength);
             await remove(ref(database, `attendance/${ay}/${grade}/${key}`));
           }
 
-          console.log("KEY", key);
+          // console.log("KEY", key);
         });
       }
 
@@ -152,7 +152,7 @@ const attendanceResolver = {
           .then(() => {
             // Get NewPresent & NewAbsent
             let prevAttendanceData = attendanceSnapshot[timestamp];
-            console.log("PREVATTENDANCE", prevAttendanceData);
+            // console.log("PREVATTENDANCE", prevAttendanceData);
             let { present: prevPresent, absent: prevAbsent } =
               prevAttendanceData;
 
@@ -237,7 +237,7 @@ const attendanceResolver = {
             // });
           })
           .catch((error) => {
-            console.log(error);
+            // console.log(error);
           });
       } else {
         // If the attendance record is not present then create a new record of the attendance
@@ -371,7 +371,7 @@ const attendanceResolver = {
             // console.log(snapshot.val());
             return snapshot.val();
           } else {
-            console.log("No data available");
+            // console.log("No data available");
           }
         })
         .catch((error) => {
@@ -381,8 +381,8 @@ const attendanceResolver = {
       Object.keys(studentsAttendance).forEach((key) => {
         Object.values(studentsAttendance[key]).forEach(async (student) => {
           Object.values(student).forEach(async (stud) => {
-            console.log("STUDENT", stud);
-            console.log(`studs/${key}/${stud.grade}/${stud.userId}`);
+            // console.log("STUDENT", stud);
+            // console.log(`studs/${key}/${stud.grade}/${stud.userId}`);
             await update(
               ref(database, `studs/${key}/${stud.grade}/${stud.userId}`),
               {

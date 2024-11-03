@@ -7,7 +7,7 @@ const deleteObjectFromStorage = async (reference) => {
       return true;
     })
     .catch((error) => {
-      console.log("ERROR IN DELETE DOCUMENT", error);
+      // console.log("ERROR IN DELETE DOCUMENT", error);
       return false;
     });
 };
