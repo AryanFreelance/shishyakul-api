@@ -266,6 +266,8 @@ const studentResolver = {
         studentInformation,
         guardianInformation,
         siblingInformation,
+        parentSection,
+        studentSection,
       }
     ) => {
       if (newAy) {
@@ -288,10 +290,6 @@ const studentResolver = {
           return "INVALID AY FORMAT";
         }
       }
-      // console.log("NEWAY", newAy);
-      // console.log("AY", ay);
-      // console.log("GRADE", grade);
-      // console.log("NEWGRADE", newGrade);
 
       const studentRef = ref(
         database,
@@ -320,6 +318,8 @@ const studentResolver = {
       if (studentInformation) data.studentInformation = studentInformation;
       if (guardianInformation) data.guardianInformation = guardianInformation;
       if (siblingInformation) data.siblingInformation = siblingInformation;
+      if (parentSection) data.parentSection = parentSection;
+      if (studentSection) data.studentSection = studentSection;
 
       // console.log("DATA", data);
 
@@ -343,7 +343,6 @@ const studentResolver = {
           ay: data.ay,
           grade: data.grade,
         });
-        // .then(() => console.log("STUDENT UPDATED SUCCESSFULLY"));
 
         return "SUCCESS";
       }

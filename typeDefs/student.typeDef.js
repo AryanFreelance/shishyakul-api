@@ -13,12 +13,69 @@ type Student {
     studentInformation: StudentInformation
     guardianInformation: GuardianInformation
     siblingInformation: [SiblingInformation]
+    parentSection: ParentSectionInformation
+    studentSection: StudentSectionInformation
     fees: [Fees]
 }
 
 type StudentAttendance {
     present: Int
     absent: Int
+}
+
+type ParentSectionInformation {
+    expectationsWithShishyakul: String
+    strengthAndWeakness: String
+    medicalAllergiesAndConcerns: String
+}
+
+type StudentSectionInformation {
+    describeYourself: String
+    passion: String
+    skills: String
+    hobbies: String
+    dreams: String
+    achievements: String
+    strength: String
+    weakness: String
+    thingsWantToImprove: String
+    anythingToShare: String
+    expectationsWithShishyakul: String
+}
+
+type StudentInformation {
+    dob: String
+    age: Int
+    gender: String
+    adhaar: String
+    address: String
+    school: String
+    board: String
+    medium: String
+}
+
+type GuardianInformation {
+    motherFirstName: String
+    motherMiddleName: String
+    motherLastName: String
+    motherOccupation: String
+    motherDesignation: String
+    motherExServiceWomen: Boolean
+    motherContactNumber: String
+    fatherFirstName: String
+    fatherMiddleName: String
+    fatherLastName: String
+    fatherOccupation: String
+    fatherDesignation: String
+    fatherExServiceMen: Boolean
+    fatherContactNumber: String
+}
+
+type SiblingInformation {
+    siblingName: String
+    age: Int
+    status: String
+    organization: String
 }
 
 type Query {
@@ -58,44 +115,11 @@ type Mutation {
         batch: String,
         studentInformation: StudentInformationInput
         guardianInformation: GuardianInformationInput
+        parentSection: ParentSectionInformationInput
+        studentSection: StudentSectionInformationInput
         siblingInformation: [SiblingInformationInput]
     ): String!
     deleteStudent(ay: String!, grade: String!, userId: ID!): String!
-}
-
-type StudentInformation {
-    dob: String
-    age: Int
-    gender: String
-    adhaar: String
-    address: String
-    school: String
-    board: String
-    medium: String
-}
-
-type GuardianInformation {
-    motherFirstName: String
-    motherMiddleName: String
-    motherLastName: String
-    motherOccupation: String
-    motherDesignation: String
-    motherExServiceWomen: Boolean
-    motherContactNumber: String
-    fatherFirstName: String
-    fatherMiddleName: String
-    fatherLastName: String
-    fatherOccupation: String
-    fatherDesignation: String
-    fatherExServiceMen: Boolean
-    fatherContactNumber: String
-}
-
-type SiblingInformation {
-    siblingName: String
-    age: Int
-    status: String
-    organization: String
 }
 
 input StudentInformationInput {
@@ -132,6 +156,26 @@ input SiblingInformationInput {
     age: Int
     status: String
     organization: String
+}
+
+input ParentSectionInformationInput {
+    expectationsWithShishyakul: String
+    strengthAndWeakness: String
+    medicalAllergiesAndConcerns: String
+}
+
+input StudentSectionInformationInput {
+    describeYourself: String
+    passion: String
+    skills: String
+    hobbies: String
+    dreams: String
+    achievements: String
+    strength: String
+    weakness: String
+    thingsWantToImprove: String
+    anythingToShare: String
+    expectationsWithShishyakul: String
 }
 `;
 

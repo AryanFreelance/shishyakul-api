@@ -1,5 +1,5 @@
 import { deleteObject, ref } from "firebase/storage";
-import { db, storage } from "../db/index.js";
+import { database, db, storage } from "../db/index.js";
 import {
   collection,
   deleteDoc,
@@ -8,6 +8,7 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
+import { child, get, ref as refDB } from "firebase/database";
 
 // TODO: Add Test Paper Attendance Feature
 
@@ -35,18 +36,47 @@ const testPaperResolver = {
       const testPaper = await getDoc(doc(db, "testPapersDraft", id));
       return testPaper.data();
     },
-    testpaperUsers: async (_, { id }) => {
-      const stud = await getDoc(doc(db, "students", id));
-      const student = stud.data();
+    testpaperUsers: async (_, { ay, grade, id }) => {
+      // const stud = await getDoc(doc(db, "students", id));
+      // const student = stud.data();
+
+      const student = await get(
+        child(refDB(database), `studs/${ay}/${grade}/${id}`)
+      )
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            console.log(snapshot.val());
+            return snapshot.val();
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
 
       const testPapersCollection = collection(db, "testPapers");
       const testPapersSnapshot = await getDocs(testPapersCollection);
       const testPapers = [];
       testPapersSnapshot.forEach((doc) => {
-        if (
-          doc.data().sharedWith.includes(student?.email) ||
-          doc.data().sharedWith.includes(student?.grade)
-        ) {
+        let sharedWithData = doc.data().sharedWith;
+        sharedWithData = sharedWithData
+          .filter(
+            (data) =>
+              data.academicYear === student?.ay &&
+              data.grade === student?.grade &&
+              (data.batch === "N/A" || data.batch === student?.batch)
+          )
+          .map((data) => {
+            console.log("DATA", data);
+            return {
+              academicYear: data.academicYear,
+              grade: data.grade,
+              batch: data.batch || "N/A",
+            };
+          });
+        if (sharedWithData.length > 0) {
+          console.log("SHAREDWITHDATA", sharedWithData);
           const testpaper = doc.data();
           // I want to return the marks with the student's email
           if (testpaper.marks) {
@@ -54,10 +84,11 @@ const testPaperResolver = {
               (mark) => mark.email === student?.email
             );
           }
+          console.log("TESTPAPER", testpaper);
           testPapers.push(testpaper);
         }
       });
-      // console.log("TESTPAPERS", testPapers);
+      console.log("TESTPAPERS", testPapers);
       return testPapers;
     },
     testpaperMarks: async (_, { id }) => {

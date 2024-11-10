@@ -15,7 +15,7 @@ type TestPaper {
 type Query {
     testpapers: TestPapersOutput
     testpaper(id: ID!, published: Boolean!): TestPaper
-    testpaperUsers(id:ID!): [TestPaperUser]
+    testpaperUsers(ay: String!, grade: String!, id: ID!): [TestPaperUser]
     testpaperMarks(id: ID!): [Marks]
     testAccessedUsers(id: ID!): [StudentCopy]
 }
