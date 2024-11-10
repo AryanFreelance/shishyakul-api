@@ -9,6 +9,8 @@ import {
   setDoc,
 } from "firebase/firestore";
 
+// TODO: Add Test Paper Attendance Feature
+
 const testPaperResolver = {
   Query: {
     testpapers: async () => {
@@ -70,6 +72,7 @@ const testPaperResolver = {
 
       return testpaperMarks;
     },
+    // TODO: Update the Students Fetching from Firestore to Realtime Database
     testAccessedUsers: async (_, { id }) => {
       const testPaper = await getDoc(doc(db, "testPapers", id));
       if (!testPaper.data()) {

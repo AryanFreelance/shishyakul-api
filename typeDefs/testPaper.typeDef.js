@@ -6,7 +6,7 @@ type TestPaper {
     date: String
     totalMarks: Int
     url: String
-    sharedWith: [String]
+    sharedWith: [TestSharedWith]
     createdAt: String!
     published: Boolean!
     marks: [Marks]
@@ -18,6 +18,12 @@ type Query {
     testpaperUsers(id:ID!): [TestPaperUser]
     testpaperMarks(id: ID!): [Marks]
     testAccessedUsers(id: ID!): [StudentCopy]
+}
+
+type TestSharedWith {
+    academicYear: String
+    grade: String
+    batch: String
 }
 
 type TestPaperUser {
@@ -78,7 +84,7 @@ type Mutation {
     ): String
     updateSharedTest(
         id: ID!,
-        sharedWith: [String]
+        sharedWith: [TestSharedWithInp]
     ): String
     addMarks (
         testId: ID!,
@@ -93,6 +99,12 @@ input MarksInput {
     email: String
     marks: Int
     grade: String
+}
+
+input TestSharedWithInp {
+    academicYear: String
+    grade: String
+    batch: String
 }
 `;
 
