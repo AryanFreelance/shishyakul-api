@@ -45,14 +45,14 @@ const testPaperResolver = {
       )
         .then((snapshot) => {
           if (snapshot.exists()) {
-            console.log(snapshot.val());
+            // console.log(snapshot.val());
             return snapshot.val();
           } else {
-            console.log("No data available");
+            // console.log("No data available");
           }
         })
         .catch((error) => {
-          console.error(error);
+          // console.error(error);
         });
 
       const testPapersCollection = collection(db, "testPapers");
@@ -68,7 +68,7 @@ const testPaperResolver = {
               (data.batch === "N/A" || data.batch === student?.batch)
           )
           .map((data) => {
-            console.log("DATA", data);
+            // console.log("DATA", data);
             return {
               academicYear: data.academicYear,
               grade: data.grade,
@@ -76,7 +76,7 @@ const testPaperResolver = {
             };
           });
         if (sharedWithData.length > 0) {
-          console.log("SHAREDWITHDATA", sharedWithData);
+          // console.log("SHAREDWITHDATA", sharedWithData);
           const testpaper = doc.data();
           // I want to return the marks with the student's email
           if (testpaper.marks) {
@@ -84,11 +84,11 @@ const testPaperResolver = {
               (mark) => mark.email === student?.email
             );
           }
-          console.log("TESTPAPER", testpaper);
+          // console.log("TESTPAPER", testpaper);
           testPapers.push(testpaper);
         }
       });
-      console.log("TESTPAPERS", testPapers);
+      // console.log("TESTPAPERS", testPapers);
       return testPapers;
     },
     testpaperMarks: async (_, { id }) => {
