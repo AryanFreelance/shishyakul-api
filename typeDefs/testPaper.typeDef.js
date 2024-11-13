@@ -37,9 +37,11 @@ type TestPaperAttendanceStudents {
     firstname: String!
     middlename: String
     lastname: String!
+    email: String
     ay: String!
     grade: String
     batch: String
+    marks: [Marks]
 }
 
 type TestSharedWith {
