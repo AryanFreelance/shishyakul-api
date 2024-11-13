@@ -9,7 +9,18 @@ type TestPaper {
     sharedWith: [TestSharedWith]
     createdAt: String!
     published: Boolean!
+    lockShareWith: Boolean
     marks: [Marks]
+    attendance: TestPaperAttendance
+    present: [ID]
+    absent: [ID]
+    attendanceDate: String
+}
+
+type TestPaperAttendance {
+    date: String
+    present: [ID]
+    absent: [ID]
 }
 
 type Query {
@@ -18,6 +29,17 @@ type Query {
     testpaperUsers(ay: String!, grade: String!, id: ID!): [TestPaperUser]
     testpaperMarks(id: ID!): [Marks]
     testAccessedUsers(id: ID!): [StudentCopy]
+    testpaperAttendanceStudents(id: ID!): [TestPaperAttendanceStudents]
+}
+
+type TestPaperAttendanceStudents {
+    userId: ID!
+    firstname: String!
+    middlename: String
+    lastname: String!
+    ay: String!
+    grade: String
+    batch: String
 }
 
 type TestSharedWith {
@@ -86,6 +108,16 @@ type Mutation {
         id: ID!,
         sharedWith: [TestSharedWithInp]
     ): String
+    lockSharedWithTest(
+        id: ID!,
+        lockShareWith: Boolean!
+    ): String
+    testAttendanceHandler(
+        id: ID!,
+        date: String!,
+        present: [ID],
+        absent: [ID]
+    ): String!
     addMarks (
         testId: ID!,
         data: [MarksInput]

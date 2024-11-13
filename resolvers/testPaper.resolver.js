@@ -6,7 +6,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  runTransaction,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { child, get, ref as refDB } from "firebase/database";
 
@@ -141,6 +143,33 @@ const testPaperResolver = {
       });
       return students;
     },
+    testpaperAttendanceStudents: async (_, { id }) => {
+      const testPaper = await getDoc(doc(db, "testPapers", id));
+      const testSharedWith = testPaper.data().sharedWith;
+      const students = new Set();
+
+      const studentPromises = testSharedWith.map((sharing) =>
+        get(
+          child(
+            refDB(database),
+            `studs/${sharing.academicYear}/${sharing.grade}`
+          )
+        ).then((snapshot) => {
+          if (!snapshot || !snapshot.exists()) return;
+          const studentsInGrade = Object.values(snapshot.val());
+          if (sharing.batch === "N/A") {
+            studentsInGrade.forEach((student) => students.add(student));
+          } else {
+            studentsInGrade
+              .filter((student) => student.batch === sharing.batch)
+              .forEach((student) => students.add(student));
+          }
+        })
+      );
+
+      await Promise.all(studentPromises);
+      return Array.from(students);
+    },
   },
   Mutation: {
     createTest: async (_, { id, title, subject, date, totalMarks, url }) => {
@@ -153,6 +182,7 @@ const testPaperResolver = {
         url,
         createdAt: new Date().toLocaleString(),
         published: false,
+        lockShareWith: false,
       };
       // console.log(testPaper);
       await setDoc(doc(db, "testPapersDraft", testPaper.id), { ...testPaper })
@@ -180,6 +210,7 @@ const testPaperResolver = {
       };
       // console.log(testPaper);
       await setDoc(doc(db, "testPapersDraft", testPaper.id), {
+        ...prevData.data(),
         ...testPaper,
       }).catch((error) => {
         // console.error("Error writing document: ", error);
@@ -227,6 +258,38 @@ const testPaperResolver = {
           return "ERROR";
         }
       );
+      return "SUCCESS";
+    },
+    lockSharedWithTest: async (_, { id, lockShareWith }) => {
+      await updateDoc(doc(db, "testPapers", id), {
+        lockShareWith,
+      })
+        .then(() => {
+          console.log("Document successfully updated!");
+        })
+        .catch((error) => {
+          console.error("Error updating document: ", error);
+          return "ERROR";
+        });
+      return "SUCCESS";
+    },
+    testAttendanceHandler: async (_, { id, date, present, absent }) => {
+      await runTransaction(db, async (transaction) => {
+        const testDocRef = doc(db, "testPapers", id);
+        const sfDoc = await transaction.get(testDocRef);
+        if (!sfDoc.exists()) {
+          throw "Document does not exist!";
+        }
+
+        // const newPopulation = sfDoc.data().population + 1;
+        transaction.update(testDocRef, {
+          present: present,
+          absent: absent,
+          attendanceDate: date,
+        });
+      }).catch(() => {
+        return "ERROR";
+      });
       return "SUCCESS";
     },
     addMarks: async (_, { testId, data }) => {
