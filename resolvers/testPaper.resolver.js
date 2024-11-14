@@ -12,8 +12,6 @@ import {
 } from "firebase/firestore";
 import { child, get, ref as refDB } from "firebase/database";
 
-// TODO: Add Test Paper Attendance Feature
-
 const testPaperResolver = {
   Query: {
     testpapers: async () => {
@@ -105,7 +103,7 @@ const testPaperResolver = {
 
       return testpaperMarks;
     },
-    // TODO: Update the Students Fetching from Firestore to Realtime Database
+    // TODO: Remove this function as it is not used now
     testAccessedUsers: async (_, { id }) => {
       const testPaper = await getDoc(doc(db, "testPapers", id));
       if (!testPaper.data()) {
@@ -265,7 +263,7 @@ const testPaperResolver = {
         lockShareWith,
       })
         .then(() => {
-          console.log("Document successfully updated!");
+          // console.log("Document successfully updated!");
         })
         .catch((error) => {
           console.error("Error updating document: ", error);
