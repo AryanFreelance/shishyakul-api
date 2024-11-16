@@ -69,6 +69,25 @@ const tempStudentResolver = {
 
       return "SUCCESS";
     },
+
+    bulkDeleteTempStudents: async (_, { emails }) => {
+      emails.forEach(async (email) => {
+        const tempstudent = await getDoc(doc(db, "tempstudents", email));
+
+        await deleteDoc(doc(db, "tempstudents", email)).catch((error) => {
+          // console.log("Error deleting document: ", error);
+          return "ERROR";
+        });
+
+        await deleteDoc(
+          doc(db, "verifications", tempstudent.data().verificationCode)
+        ).catch((error) => {
+          // console.log("Error deleting document: ", error);
+          return "ERROR";
+        });
+      });
+      return "SUCCESS";
+    },
   },
 };
 

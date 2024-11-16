@@ -12,6 +12,7 @@ type Query {
 type Mutation {
     createTempStudent(email: ID!, verificationCode: String!): TempStudentSuccessResponse
     deleteTempStudent(email: String!): String!
+    bulkDeleteTempStudents(emails: [String!]): String!
 }
 
 type TempStudentSuccessResponse {
