@@ -29,6 +29,7 @@ const corsOptions = {
     "https://www.shishyakul.in",
     "https://shishyakul.vercel.app",
     "http://localhost:3000",
+    "https://shishyakul-git-pre-deploy-hetrefs-projects.vercel.app"
   ],
   credentials: true, // This allows cookies to be sent from the client
 };
