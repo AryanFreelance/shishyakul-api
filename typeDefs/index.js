@@ -6,8 +6,10 @@ import attendanceTypeDef from "./attendance.typeDef.js";
 import testPaperTypeDef from "./testPaper.typeDef.js";
 import verificationsTypeDef from "./verifications.typeDef.js";
 import tempStudentsTypeDef from "./tempStudents.typedDef.js";
+import activateTypeDef from "./activate.typeDef.js";
 
 const mergedTypeDefs = mergeTypeDefs([
+  activateTypeDef,
   studentTypeDef,
   feesTypeDef,
   attendanceTypeDef,

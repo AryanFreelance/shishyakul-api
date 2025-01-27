@@ -6,8 +6,10 @@ import attendanceResolver from "./attendance.resolver.js";
 import testPaperResolver from "./testPaper.resolver.js";
 import verificationsResolver from "./verifications.resolver.js";
 import tempStudentResolver from "./tempStudents.resolver.js";
+import activateResolver from "./activate.resolver.js";
 
 const mergedResolvers = mergeResolvers([
+  activateResolver,
   studentResolver,
   feesResolver,
   attendanceResolver,
