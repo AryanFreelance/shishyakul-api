@@ -1,12 +1,13 @@
 import { mergeResolvers } from "@graphql-tools/merge";
 
-import studentResolver from "./student.resolver.js";
 import feesResolver from "./fees.resolver.js";
+import studentResolver from "./student.resolver.js";
 import attendanceResolver from "./attendance.resolver.js";
 import testPaperResolver from "./testPaper.resolver.js";
 import verificationsResolver from "./verifications.resolver.js";
-import tempStudentResolver from "./tempStudents.resolver.js";
+import tempStudentsResolver from "./tempStudents.resolver.js";
 import activateResolver from "./activate.resolver.js";
+import facultyResolver from "./faculty.resolver.js";
 
 const mergedResolvers = mergeResolvers([
   activateResolver,
@@ -15,7 +16,8 @@ const mergedResolvers = mergeResolvers([
   attendanceResolver,
   testPaperResolver,
   verificationsResolver,
-  tempStudentResolver,
+  tempStudentsResolver,
+  facultyResolver,
 ]);
 
 export default mergedResolvers;

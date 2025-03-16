@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { db, database } from "../db/index.js";
 import deleteObjectFromStorage from "../actions/storage/deleteObjectFromStorage.js";
-import { ref, set } from "firebase/database";
+import { ref, set, update } from "firebase/database";
 
 const feesResolver = {
   Query: {
@@ -40,6 +40,7 @@ const feesResolver = {
         chequeImgUrl,
         upiId,
         upiImgUrl,
+        neftRefNo,
       }
     ) => {
       let fee = {};
@@ -83,6 +84,19 @@ const feesResolver = {
           upiImgUrl,
           createdAt: new Date().toLocaleString(),
         };
+      } else if (mode === "neft") {
+        fee = {
+          userId,
+          id,
+          email,
+          feesPaid,
+          paidOn,
+          month,
+          year,
+          mode,
+          neftRefNo,
+          createdAt: new Date().toLocaleString(),
+        };
       }
       // console.log(fee);
       await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee })
@@ -119,6 +133,39 @@ const feesResolver = {
 
       return "SUCCESS";
     },
+    updateStudentTotalFees: async (_, { userId, totalFees }, context) => {
+      try {
+        // Get a reference to the student document
+        // Update the totalFees field
+        console.log(userId, totalFees);
+        // await updateDoc(doc(database, "students", userId), {
+        //   totalFees,
+        // }).catch((error) => {
+        //   console.error("Error adding document: ", error);
+        //   return false;
+        // });
+        const studentData = await getDoc(doc(db, "studs", userId));
+        if (studentData.exists()) {
+          const ay = studentData.data().ay;
+          const grade = studentData.data().grade;
+          await update(ref(database, "studs/" + ay + "/" + grade + "/" + userId), {
+            totalFees,
+          }).catch((error) => {
+            console.error("Error updating document: ", error);
+            return false;
+          });
+          console.log("Student total fees updated successfully");
+        } else {
+          console.log("Student data not found");
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error updating student total fees:', error);
+        return false;
+      }
+    },
     deleteFee: async (_, { userId, id }) => {
       let pdfId = "";
       let mode = "";
@@ -137,10 +184,10 @@ const feesResolver = {
           // console.log("Error getting document:", error);
           return "ERROR";
         });
-      if (mode !== "cash") {
+      if (mode !== "cash" && mode !== "neft") {
         pdfId = pdfId
           .split("/")
-          [pdfId.split("/").length - 1].split("?")[0]
+        [pdfId.split("/").length - 1].split("?")[0]
           .substring(6, 16);
 
         if (!deleteObjectFromStorage(`fee/${pdfId}`)) {

@@ -1,6 +1,6 @@
 const activateTypeDef = `#graphql
 type Query {
-  activate: String!
+  activate: String
 }
 `;
 

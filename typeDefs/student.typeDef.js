@@ -1,11 +1,11 @@
 const studentTypeDef = `#graphql
 type Student {
-    userId: ID!
-    firstname: String!
+    userId: ID
+    firstname: String
     middlename: String
-    lastname: String!
-    email: String!
-    ay: String!
+    lastname: String
+    email: String
+    ay: String
     phone: String
     grade: String
     batch: String
@@ -15,6 +15,7 @@ type Student {
     siblingInformation: [SiblingInformation]
     parentSection: ParentSectionInformation
     studentSection: StudentSectionInformation
+    totalFees: Int
     fees: [Fees]
 }
 
@@ -79,38 +80,38 @@ type SiblingInformation {
 }
 
 type Query {
-    studentInfo(userId: ID!): Student
-    students(ay: String!, grade: String): [Student]
-    ayStudents(ay: String!): [Student]
-    gStudents(ay: String!, grade: String!): [Student]
-    student(ay: String!, grade: String!, userId: ID!): Student
+    studentInfo(userId: ID): Student
+    students(ay: String, grade: String): [Student]
+    ayStudents(ay: String): [Student]
+    gStudents(ay: String, grade: String): [Student]
+    student(ay: String, grade: String, userId: ID): Student
     academicYears: [String]
 }
 
 type Mutation {
     initializeStudent(
-        email: String!
-    ): String!
+        email: String
+    ): String
     createStudent(
-        firstname: String!,
-        middlename: String!,
-        lastname: String!,
-        email: String!,
-        password: String!,
-        phone: String!,
-        ay: String!,
-        grade: String!,
-        verificationCode: String!
-    ): String!
+        firstname: String,
+        middlename: String,
+        lastname: String,
+        email: String,
+        password: String,
+        phone: String,
+        ay: String,
+        grade: String,
+        verificationCode: String
+    ): String
     updateStudent(
-        userId: ID!,
+        userId: ID,
         firstname: String,
         middlename: String,
         lastname: String,
         phone: String,
-        ay: String!,
+        ay: String,
         newAy: String,
-        grade: String!,
+        grade: String,
         newGrade: String,
         batch: String,
         studentInformation: StudentInformationInput
@@ -118,8 +119,8 @@ type Mutation {
         parentSection: ParentSectionInformationInput
         studentSection: StudentSectionInformationInput
         siblingInformation: [SiblingInformationInput]
-    ): String!
-    deleteStudent(ay: String!, grade: String!, userId: ID!): String!
+    ): String
+    deleteStudent(ay: String, grade: String, userId: ID): String
 }
 
 input StudentInformationInput {

@@ -118,19 +118,19 @@ const attendanceResolver = {
       // Check if the attendance data of a particular grade students is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
       // console.log("ATTENDANCESNAPSHOT", attendanceSnapshot);
 
-      if (attendanceSnapshot) {
-        let attendanceLength = Object.values(attendanceSnapshot).length;
-        Object.keys(attendanceSnapshot).forEach(async (key) => {
-          // If the length of the object is more than 60 then delete the object
-          // console.log("KEY", Object.values(attendanceSnapshot).length);
-          if (attendanceLength-- > 100) {
-            // console.log("ATTENDANCELENGTH", attendanceLength);
-            await remove(ref(database, `attendance/${ay}/${grade}/${key}`));
-          }
+      // if (attendanceSnapshot) {
+      //   let attendanceLength = Object.values(attendanceSnapshot).length;
+      //   Object.keys(attendanceSnapshot).forEach(async (key) => {
+      //     // If the length of the object is more than 60 then delete the object
+      //     // console.log("KEY", Object.values(attendanceSnapshot).length);
+      //     if (attendanceLength-- > 100) {
+      //       // console.log("ATTENDANCELENGTH", attendanceLength);
+      //       await remove(ref(database, `attendance/${ay}/${grade}/${key}`));
+      //     }
 
-          // console.log("KEY", key);
-        });
-      }
+      //     // console.log("KEY", key);
+      //   });
+      // }
 
       // attendanceSnapshot.forEach(async (doc) => {
       //   const attendanceData = doc.data();
@@ -203,38 +203,6 @@ const attendanceResolver = {
                 }
               );
             });
-
-            // present.forEach(async (studentId) => {
-            //   await dbTransaction(
-            //     ref(database, `studs/${ay}/${grade}/${studentId}`),
-            //     (stud) => {
-            //       if (stud) {
-            //         if (stud?.attendance?.present) {
-            //           stud.attendance.present++;
-            //         } else {
-            //           stud.attendance.present = 1;
-            //         }
-            //       }
-            //       return stud;
-            //     }
-            //   );
-            // });
-
-            // absent.forEach(async (studentId) => {
-            //   await dbTransaction(
-            //     ref(database, `studs/${ay}/${grade}/${studentId}`),
-            //     (stud) => {
-            //       if (stud) {
-            //         if (stud?.attendance?.absent) {
-            //           stud.attendance.absent++;
-            //         } else {
-            //           stud.attendance.absent = 1;
-            //         }
-            //       }
-            //       return stud;
-            //     }
-            //   );
-            // });
           })
           .catch((error) => {
             // console.log(error);
@@ -278,7 +246,6 @@ const attendanceResolver = {
           );
         });
       }
-
       return "SUCCESS";
     },
     updateAttendance: async (_, { timestamp, present, absent }) => {

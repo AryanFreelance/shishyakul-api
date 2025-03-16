@@ -1,20 +1,22 @@
 const testPaperTypeDef = `#graphql
 type TestPaper {
-    id: ID!
+    id: ID
     title: String
     subject: String
     date: String
     totalMarks: Int
     url: String
     sharedWith: [TestSharedWith]
-    createdAt: String!
-    published: Boolean!
+    createdAt: String
+    published: Boolean
     lockShareWith: Boolean
     marks: [Marks]
     attendance: TestPaperAttendance
     present: [ID]
     absent: [ID]
     attendanceDate: String
+    createdBy: String
+    creatorName: String
 }
 
 type TestPaperAttendance {
@@ -25,20 +27,28 @@ type TestPaperAttendance {
 
 type Query {
     testpapers: TestPapersOutput
-    testpaper(id: ID!, published: Boolean!): TestPaper
-    testpaperUsers(ay: String!, grade: String!, id: ID!): [TestPaperUser]
-    testpaperMarks(id: ID!): [Marks]
-    testAccessedUsers(id: ID!): [StudentCopy]
-    testpaperAttendanceStudents(id: ID!): [TestPaperAttendanceStudents]
+    testpaper(id: ID, published: Boolean): TestPaper
+    testpaperUsers(ay: String, grade: String, id: ID): [TestPaperUser]
+    testpaperMarks(id: ID): [Marks]
+    testAccessedUsers(id: ID): [StudentCopy]
+    testpaperAttendanceStudents(id: ID): [TestPaperAttendanceStudents]
+    facultyTestpapers(createdBy: String, published: Boolean): [TestPaper]
+    allFacultyTestpapers: [FacultyTestPapers]
+}
+
+type FacultyTestPapers {
+    facultyEmail: String
+    facultyName: String
+    testpapers: [TestPaper]
 }
 
 type TestPaperAttendanceStudents {
-    userId: ID!
-    firstname: String!
+    userId: ID
+    firstname: String
     middlename: String
-    lastname: String!
+    lastname: String
     email: String
-    ay: String!
+    ay: String
     grade: String
     batch: String
     marks: [Marks]
@@ -51,7 +61,7 @@ type TestSharedWith {
 }
 
 type TestPaperUser {
-    id: ID!
+    id: ID
     title: String
     subject: String
     date: String
@@ -64,11 +74,11 @@ type TestPaperUser {
 }
 
 type StudentCopy {
-    userId: ID!
-    firstname: String!
+    userId: ID
+    firstname: String
     middlename: String
-    lastname: String!
-    email: String!
+    lastname: String
+    email: String
     phone: String
     grade: String
 }
@@ -89,42 +99,55 @@ type Marks {
 
 type Mutation {
     createTest(
-        id: ID!
-        title: String!,
-        subject: String!,
-        date: String!,
-        totalMarks: Int!,
-        url: String!,
+        id: ID,
+        title: String,
+        subject: String,
+        date: String,
+        totalMarks: Int,
+        url: String,
+        createdBy: String,
+        creatorName: String
     ): String
     updateDraftTest(
-        id: ID!,
+        id: ID,
         title: String,
         subject: String,
         date: String,
         totalMarks: Int,
     ): String
+    updateFacultyTest(
+        id: ID,
+        title: String,
+        subject: String,
+        date: String,
+        totalMarks: Int,
+        url: String,
+        published: Boolean,
+        createdBy: String,
+        creatorName: String
+    ): String
     publishTestPaper(
-        id: ID!,
+        id: ID,
     ): String
     updateSharedTest(
-        id: ID!,
+        id: ID,
         sharedWith: [TestSharedWithInp]
     ): String
     lockSharedWithTest(
-        id: ID!,
-        lockShareWith: Boolean!
+        id: ID,
+        lockShareWith: Boolean
     ): String
     testAttendanceHandler(
-        id: ID!,
-        date: String!,
+        id: ID,
+        date: String,
         present: [ID],
         absent: [ID]
-    ): String!
+    ): String
     addMarks (
-        testId: ID!,
+        testId: ID,
         data: [MarksInput]
     ): String
-    deleteTest(id: ID!, published: Boolean!): String
+    deleteTest(id: ID, published: Boolean): String
 }
 
 input MarksInput {

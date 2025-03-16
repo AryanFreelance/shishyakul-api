@@ -1,32 +1,32 @@
 const verificationsTypeDef = `#graphql
 type Verification {
-    verificationCode: ID!
-    expired: Boolean!
-    studentEmail: String!
+    verificationCode: ID    
+    expired: Boolean
+    studentEmail: String
 }
 
 type Query {
     verifications: [Verification]
-    verification(verificationCode: ID!): Verification
-    verifyStudentCode(verificationCode: ID!): String!
+    verification(verificationCode: ID): Verification
+    verifyStudentCode(verificationCode: ID): String
 }
 
 type Mutation {
-    createVerification(studentEmail: String!): SuccessResponse
-    updateVerification(verificationCode: ID!, expired: Boolean): SuccessResponse
+    createVerification(studentEmail: String): SuccessResponse
+    updateVerification(verificationCode: ID, expired: Boolean): SuccessResponse
     # verifyStudentCode(verificationCode: ID!): Boolean!
-    deleteVerification(verificationCode: ID!): DeleteResponse
+    deleteVerification(verificationCode: ID): DeleteResponse
 }
 
 type SuccessResponse {
-    code: ID!
-    success: Boolean!
-    message: String!
+    code: ID
+    success: Boolean
+    message: String
 }
 
 type DeleteResponse {
-    success: Boolean!
-    message: String!
+    success: Boolean
+    message: String
 }
 `;
 
