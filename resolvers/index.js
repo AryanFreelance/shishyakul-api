@@ -8,6 +8,7 @@ import verificationsResolver from "./verifications.resolver.js";
 import tempStudentsResolver from "./tempStudents.resolver.js";
 import activateResolver from "./activate.resolver.js";
 import facultyResolver from "./faculty.resolver.js";
+import birthdaysResolver from "./birthdays.resolver.js";
 
 const mergedResolvers = mergeResolvers([
   activateResolver,
@@ -18,6 +19,7 @@ const mergedResolvers = mergeResolvers([
   verificationsResolver,
   tempStudentsResolver,
   facultyResolver,
+  birthdaysResolver,
 ]);
 
 export default mergedResolvers;

@@ -23,6 +23,47 @@ const feesResolver = {
       });
       return fees;
     },
+    studentFees: async (_, { userId, academicYear }) => {
+      try {
+        const studentFees = [];
+        const feeCollection = academicYear ? academicYear.replace("-", "_") : "current";
+        const feesCollection = collection(db, "fees", userId, feeCollection);
+        const feesSnapshot = await getDocs(feesCollection);
+
+        feesSnapshot.forEach((doc) => {
+          studentFees.push(doc.data());
+        });
+
+        return studentFees;
+      } catch (error) {
+        console.error("Error fetching student fees:", error);
+        return [];
+      }
+    },
+    studentAllFees: async (_, { userId }) => {
+      try {
+        const studentFees = [];
+        const userFeesDoc = await getDoc(doc(db, "fees", userId));
+
+        if (userFeesDoc.exists()) {
+          // Get all subcollections
+          const collections = await getDocs(collection(db, "fees", userId));
+
+          // For each academic year collection
+          for (const collectionRef of collections) {
+            const academicYearFees = await getDocs(collection(db, "fees", userId, collectionRef.id));
+            academicYearFees.forEach((feeDoc) => {
+              studentFees.push(feeDoc.data());
+            });
+          }
+        }
+
+        return studentFees;
+      } catch (error) {
+        console.error("Error fetching all student fees:", error);
+        return [];
+      }
+    }
   },
   Mutation: {
     createFee: async (
@@ -41,6 +82,7 @@ const feesResolver = {
         upiId,
         upiImgUrl,
         neftRefNo,
+        academicYear,
       }
     ) => {
       let fee = {};
@@ -98,8 +140,11 @@ const feesResolver = {
           createdAt: new Date().toLocaleString(),
         };
       }
-      // console.log(fee);
-      await setDoc(doc(db, "fees", fee.userId, "fee", fee.id), { ...fee })
+
+      // Store fees by academic year
+      const feeCollection = academicYear ? academicYear.replace("-", "_") : "current";
+
+      await setDoc(doc(db, "fees", fee.userId, feeCollection, fee.id), { ...fee, academicYear })
         .then(() => {
           // console.log("Document written with ID: ", fee.id);
         })
@@ -109,22 +154,10 @@ const feesResolver = {
         });
       return "SUCCESS";
     },
-    updateFee: async (_, { id, userId, remark }) => {
-      // await setDoc(doc(db, "fees", userId, "fee", id), {
-      //   id,
-      //   userId,
-      //   remark,
-      // })
-      //   .then(() => {
-      //     // console.log("Document written with ID: ", id);
-      //   })
-      //   .catch((error) => {
-      //     // console.error("Error adding document: ", error);
-      //     return "ERROR";
-      //   });
+    updateFee: async (_, { id, userId, remark, academicYear }) => {
+      const feeCollection = academicYear ? academicYear.replace("-", "_") : "current";
 
-      // Set the "capital" field of the city 'DC'
-      await updateDoc(doc(db, "fees", userId, "fee", id), {
+      await updateDoc(doc(db, "fees", userId, feeCollection, id), {
         remark,
       }).catch((error) => {
         console.error("Error adding document: ", error);
@@ -133,20 +166,11 @@ const feesResolver = {
 
       return "SUCCESS";
     },
-    updateStudentTotalFees: async (_, { userId, totalFees }, context) => {
+    updateStudentTotalFees: async (_, { userId, totalFees, academicYear }, context) => {
       try {
-        // Get a reference to the student document
-        // Update the totalFees field
-        console.log(userId, totalFees);
-        // await updateDoc(doc(database, "students", userId), {
-        //   totalFees,
-        // }).catch((error) => {
-        //   console.error("Error adding document: ", error);
-        //   return false;
-        // });
         const studentData = await getDoc(doc(db, "studs", userId));
         if (studentData.exists()) {
-          const ay = studentData.data().ay;
+          const ay = academicYear || studentData.data().ay;
           const grade = studentData.data().grade;
           await update(ref(database, "studs/" + ay + "/" + grade + "/" + userId), {
             totalFees,
@@ -166,10 +190,12 @@ const feesResolver = {
         return false;
       }
     },
-    deleteFee: async (_, { userId, id }) => {
+    deleteFee: async (_, { userId, id, academicYear }) => {
+      const feeCollection = academicYear ? academicYear.replace("-", "_") : "current";
+
       let pdfId = "";
       let mode = "";
-      await getDoc(doc(db, "fees", userId, "fee", id))
+      await getDoc(doc(db, "fees", userId, feeCollection, id))
         .then((doc) => {
           if (doc.exists()) {
             mode = doc.data().mode;
@@ -196,7 +222,7 @@ const feesResolver = {
       }
 
       // Delete Fee Document
-      await deleteDoc(doc(db, "fees", userId, "fee", id))
+      await deleteDoc(doc(db, "fees", userId, feeCollection, id))
         .then(() => {
           // console.log("Document deleted with ID: ", id);
         })

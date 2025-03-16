@@ -17,6 +17,7 @@ type Student {
     studentSection: StudentSectionInformation
     totalFees: Int
     fees: [Fees]
+    academicYearsHistory: [String]
 }
 
 type StudentAttendance {
@@ -86,6 +87,7 @@ type Query {
     gStudents(ay: String, grade: String): [Student]
     student(ay: String, grade: String, userId: ID): Student
     academicYears: [String]
+    studentAcademicYears(userId: ID!): [String]
 }
 
 type Mutation {

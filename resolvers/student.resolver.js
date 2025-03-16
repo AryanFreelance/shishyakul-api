@@ -164,6 +164,18 @@ const studentResolver = {
 
       return Object.keys(studentData);
     },
+    studentAcademicYears: async (_, { userId }) => {
+      try {
+        const studentDoc = await getDoc(doc(db, "studs", userId));
+        if (!studentDoc.exists()) return [];
+
+        const studentData = studentDoc.data();
+        return studentData.academicYearsHistory || [studentData.ay];
+      } catch (error) {
+        console.error("Error fetching student academic years:", error);
+        return [];
+      }
+    }
   },
   Mutation: {
     initializeStudent: async (_, { email }) => {
@@ -240,6 +252,7 @@ const studentResolver = {
             email,
             ay,
             grade,
+            academicYearsHistory: [ay],
           }),
           deleteDoc(doc(db, "tempstudents", email)),
           deleteDoc(doc(db, "verifications", verificationCode)),
@@ -324,29 +337,77 @@ const studentResolver = {
       // console.log("DATA", data);
 
       if (newAy || newGrade) {
-        await remove(studentRef).catch((error) => {
-          // console.log("ERROR WHILE REMOVING", error);
-          return "ERROR";
-        });
-        const updatedStudentRef = ref(
-          database,
-          "studs/" + data.ay + "/" + data.grade + "/" + userId
-        );
-        await update(updatedStudentRef, data).catch((error) => {
-          // console.log("ERROR WHILE UPDATING", error);
-          return "ERROR";
-        });
+        // Get the student document from Firestore to update academic years history
+        const studentDoc = await getDoc(doc(db, "studs", userId));
+        let academicYearsHistory = [];
 
-        await updateDoc(doc(db, "studs", userId), {
-          firstname: data.firstname,
-          lastname: data.lastname,
-          ay: data.ay,
-          grade: data.grade,
-        });
+        if (studentDoc.exists()) {
+          academicYearsHistory = studentDoc.data().academicYearsHistory || [ay];
 
-        return "SUCCESS";
+          // Add the new academic year to history if it doesn't exist
+          if (newAy && !academicYearsHistory.includes(newAy)) {
+            academicYearsHistory.push(newAy);
+          }
+        }
+
+        // If moving to a new academic year, create a new entry but keep the old one
+        if (newAy && newAy !== ay) {
+          // Create a new entry for the new academic year with reset attendance
+          const newData = {
+            ...data,
+            attendance: { present: 0, absent: 0 },
+          };
+
+          // Set the new entry
+          await set(
+            ref(database, `studs/${newAy}/${data.grade}/${userId}`),
+            newData
+          ).catch((error) => {
+            console.error("ERROR WHILE CREATING NEW ACADEMIC YEAR ENTRY", error);
+            return "ERROR";
+          });
+
+          // Update the Firestore document with the new academic year and history
+          await updateDoc(doc(db, "studs", userId), {
+            firstname: data.firstname,
+            lastname: data.lastname,
+            ay: newAy,
+            grade: data.grade,
+            academicYearsHistory,
+          });
+
+          return "SUCCESS";
+        }
+        // If only changing grade within the same academic year
+        else if (newGrade && newGrade !== grade) {
+          await remove(studentRef).catch((error) => {
+            // console.log("ERROR WHILE REMOVING", error);
+            return "ERROR";
+          });
+
+          const updatedStudentRef = ref(
+            database,
+            "studs/" + data.ay + "/" + data.grade + "/" + userId
+          );
+
+          await update(updatedStudentRef, data).catch((error) => {
+            // console.log("ERROR WHILE UPDATING", error);
+            return "ERROR";
+          });
+
+          await updateDoc(doc(db, "studs", userId), {
+            firstname: data.firstname,
+            lastname: data.lastname,
+            ay: data.ay,
+            grade: data.grade,
+            academicYearsHistory,
+          });
+
+          return "SUCCESS";
+        }
       }
 
+      // Regular update without changing academic year or grade
       await update(studentRef, data).catch((error) => {
         // console.log("ERROR WHILE UPDATING", error);
         return "ERROR";
@@ -372,51 +433,109 @@ const studentResolver = {
           return "ERROR";
         });
 
+      // Get the student document to check academic years history
+      const studentDoc = await getDoc(doc(db, "studs", userId));
+      if (!studentDoc.exists()) return "ERROR";
+
+      const studentData = studentDoc.data();
+      const academicYearsHistory = studentData.academicYearsHistory || [ay];
+
+      // Remove the student from the realtime database for this specific academic year
       await remove(studentRef).catch((error) => {
-        console.error("ERROR WHILE REMOVING", error);
+        console.error("ERROR WHILE REMOVING FROM RTDB", error);
         return "ERROR";
       });
 
-      const feesCollection = collection(db, "fees", userId, "fee");
+      // Delete fees for the specific academic year
+      const feeCollection = ay.replace("-", "_");
+      const feesCollection = collection(db, "fees", userId, feeCollection);
       const feesSnapshot = await getDocs(feesCollection);
-      feesSnapshot.forEach((doc) => {
-        const { mode, chequeImgUrl, upiImgUrl } = doc.data();
+
+      // Delete fee images and documents for this academic year
+      feesSnapshot.forEach(async (feeDoc) => {
+        const { mode, chequeImgUrl, upiImgUrl } = feeDoc.data();
         const imageName =
           mode === "cheque"
             ? chequeImgUrl
-                .split("/")
+              ?.split("/")
+              .slice(-1)[0]
+              .split("?")[0]
+              .substring(6, 16)
+            : mode === "upi"
+              ? upiImgUrl
+                ?.split("/")
                 .slice(-1)[0]
                 .split("?")[0]
                 .substring(6, 16)
-            : mode === "upi"
-            ? upiImgUrl.split("/").slice(-1)[0].split("?")[0].substring(6, 16)
-            : null;
+              : null;
         if (imageName) {
           deleteObjectFromStorage(`fee/${imageName}`);
         }
+
+        await deleteDoc(doc(db, "fees", userId, feeCollection, feeDoc.id));
       });
 
-      await deleteDoc(doc(db, "fees", userId)).catch((error) => {
-        return "FEEERROR";
-      });
+      // If this is the only academic year, delete the entire student record
+      if (academicYearsHistory.length <= 1) {
+        // Delete the entire student record
+        await deleteDoc(doc(db, "fees", userId)).catch((error) => {
+          console.error("ERROR WHILE REMOVING FEES COLLECTION", error);
+          return "FEEERROR";
+        });
 
-      return "SUCCESS";
+        await deleteDoc(doc(db, "studs", userId)).catch((error) => {
+          console.error("ERROR WHILE REMOVING STUDENT DOC", error);
+          return "ERROR";
+        });
+
+        return "SUCCESS_FULL_DELETE";
+      } else {
+        // Update the academicYearsHistory to remove the current academic year
+        const updatedAcademicYears = academicYearsHistory.filter(year => year !== ay);
+
+        await updateDoc(doc(db, "studs", userId), {
+          academicYearsHistory: updatedAcademicYears
+        }).catch(error => {
+          console.error("ERROR WHILE UPDATING ACADEMIC YEARS", error);
+          return "ERROR";
+        });
+
+        return "SUCCESS_PARTIAL_DELETE";
+      }
     },
   },
   Student: {
     fees: async (parent) => {
       try {
         const studentFees = [];
-        const feesCollection = collection(db, "fees", parent.userId, "fee");
+        // Get current academic year fees
+        const currentAy = parent.ay;
+        const feeCollection = currentAy ? currentAy.replace("-", "_") : "current";
+
+        const feesCollection = collection(db, "fees", parent.userId, feeCollection);
         const feesSnapshot = await getDocs(feesCollection);
+
         feesSnapshot.forEach((doc) => {
           studentFees.push(doc.data());
         });
+
         return studentFees;
       } catch (error) {
-        // console.log(error);
+        console.error("Error fetching fees:", error);
+        return [];
       }
     },
+    academicYearsHistory: async (parent) => {
+      try {
+        const studentDoc = await getDoc(doc(db, "studs", parent.userId));
+        if (!studentDoc.exists()) return [parent.ay];
+
+        return studentDoc.data().academicYearsHistory || [parent.ay];
+      } catch (error) {
+        console.error("Error fetching academic years history:", error);
+        return [parent.ay];
+      }
+    }
   },
 };
 

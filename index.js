@@ -19,6 +19,13 @@ const server = new ApolloServer({
   typeDefs: mergedTypeDefs,
   resolvers: mergedResolvers,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  csrfPrevention: true,
+  cache: "bounded",
+  introspection: true,
+  formatError: (error) => {
+    console.error('GraphQL Error:', error);
+    return error;
+  },
 });
 
 await server.start();
@@ -37,7 +44,7 @@ const corsOptions = {
 app.use(
   "/",
   cors(corsOptions),
-  express.json(),
+  express.json({ limit: '50mb' }),
   expressMiddleware(server, {
     context: async ({ req }) => ({ req }),
   })

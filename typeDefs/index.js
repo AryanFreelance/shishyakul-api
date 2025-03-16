@@ -8,6 +8,7 @@ import verificationsTypeDef from "./verifications.typeDef.js";
 import tempStudentsTypeDef from "./tempStudents.typedDef.js";
 import activateTypeDef from "./activate.typeDef.js";
 import facultyTypeDef from "./faculty.typeDef.js";
+import birthdaysTypeDef from "./birthdays.typeDef.js";
 
 const mergedTypeDefs = mergeTypeDefs([
   activateTypeDef,
@@ -18,6 +19,7 @@ const mergedTypeDefs = mergeTypeDefs([
   verificationsTypeDef,
   tempStudentsTypeDef,
   facultyTypeDef,
+  birthdaysTypeDef,
 ]);
 
 export default mergedTypeDefs;
