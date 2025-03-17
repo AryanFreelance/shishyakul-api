@@ -381,7 +381,84 @@ const testPaperResolver = {
         });
       return "SUCCESS";
     },
-    testAttendanceHandler: async (_, { id, date, present, absent }) => {
+    testAttendanceHandler: async (_, { id, date, present, absent, facultyId }) => {
+      // If facultyId is provided, verify that each student in present and absent arrays
+      // is assigned to this faculty member
+      if (facultyId) {
+        try {
+          // First, get the test paper to find which students are shared with it
+          const testPaperRef = doc(db, "testPapers", id);
+          const testPaperDoc = await getDoc(testPaperRef);
+
+          if (!testPaperDoc.exists()) {
+            throw new Error("Test paper not found");
+          }
+
+          const testPaperData = testPaperDoc.data();
+          const sharedWith = testPaperData.sharedWith || [];
+
+          // Get faculty assignments
+          const facultyRef = doc(db, "faculties", facultyId);
+          const facultyDoc = await getDoc(facultyRef);
+
+          if (facultyDoc.exists()) {
+            const facultyData = facultyDoc.data();
+            const facultyAssignments = facultyData.assignedStudents || [];
+
+            // If the faculty has assignments, filter the students
+            if (facultyAssignments.length > 0 && sharedWith.length > 0) {
+              // Get all students that match the test paper sharing criteria
+              const assignedStudentIds = [];
+
+              // For each sharing criteria in the test paper
+              for (const sharing of sharedWith) {
+                const { academicYear, grade, batch } = sharing;
+
+                // Get students for this academic year and grade
+                const studentRef = ref(database, `studs/${academicYear}/${grade}`);
+                const snapshot = await get(studentRef);
+
+                if (snapshot.exists()) {
+                  const studentsData = snapshot.val();
+                  const studentsInGrade = Object.values(studentsData);
+
+                  // Filter students by batch if specified
+                  const filteredStudents = batch && batch !== "N/A"
+                    ? studentsInGrade.filter(student => student.batch === batch)
+                    : studentsInGrade;
+
+                  // Check if each student is assigned to this faculty
+                  filteredStudents.forEach(student => {
+                    const isAssigned = facultyAssignments.some(assignment => {
+                      // Match on academic year
+                      if (assignment.academicYear !== academicYear) return false;
+
+                      // If grade is specified, it must match
+                      if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+
+                      // If batch is specified, it must match
+                      if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+
+                      return true;
+                    });
+
+                    if (isAssigned) {
+                      assignedStudentIds.push(student.userId);
+                    }
+                  });
+                }
+              }
+
+              // Filter present and absent arrays to only include assigned students
+              present = present.filter(studentId => assignedStudentIds.includes(studentId));
+              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+            }
+          }
+        } catch (error) {
+          console.error("Error filtering students by faculty assignment:", error);
+        }
+      }
+
       await runTransaction(db, async (transaction) => {
         const testDocRef = doc(db, "testPapers", id);
         const sfDoc = await transaction.get(testDocRef);
@@ -389,7 +466,6 @@ const testPaperResolver = {
           throw "Document does not exist!";
         }
 
-        // const newPopulation = sfDoc.data().population + 1;
         transaction.update(testDocRef, {
           present: present,
           absent: absent,

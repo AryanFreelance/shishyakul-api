@@ -141,7 +141,8 @@ type Mutation {
         id: ID,
         date: String,
         present: [ID],
-        absent: [ID]
+        absent: [ID],
+        facultyId: ID
     ): String
     addMarks (
         testId: ID,

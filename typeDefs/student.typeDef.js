@@ -84,7 +84,7 @@ type Query {
     studentInfo(userId: ID): Student
     students(ay: String, grade: String): [Student]
     ayStudents(ay: String): [Student]
-    gStudents(ay: String, grade: String): [Student]
+    gStudents(ay: String, grade: String, facultyId: ID): [Student]
     student(ay: String, grade: String, userId: ID): Student
     academicYears: [String]
     studentAcademicYears(userId: ID!): [String]

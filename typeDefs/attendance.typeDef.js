@@ -13,8 +13,8 @@ const attendanceTypeDef = `#graphql
   }
   type Mutation {
     createAttendance(ay: String, grade: String, timestamp: ID, date: String, present: [ID], absent: [ID]): String
-    attendanceHandler(ay: String, grade: String, timestamp: ID, date: String, present: [ID], absent: [ID]): String
-    updateAttendance(timestamp: ID, present: [ID], absent: [ID]): String
+    attendanceHandler(ay: String, grade: String, timestamp: ID, date: String, present: [ID], absent: [ID], facultyId: ID): String
+    updateAttendance(timestamp: ID, present: [ID], absent: [ID], facultyId: ID): String
     resetAttendance: String
   }
 `;

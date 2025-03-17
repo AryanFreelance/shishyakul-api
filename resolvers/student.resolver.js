@@ -102,7 +102,7 @@ const studentResolver = {
 
       return finalStudents;
     },
-    gStudents: async (_, { ay, grade }) => {
+    gStudents: async (_, { ay, grade, facultyId }) => {
       let studentData,
         finalStudents = [];
 
@@ -121,6 +121,37 @@ const studentResolver = {
 
       if (studentData) {
         finalStudents = Object.values(studentData);
+      }
+
+      // Filter students by faculty assignments if facultyId is provided
+      if (facultyId) {
+        // Get faculty assignments
+        const facultyRef = doc(db, "faculties", facultyId);
+        const facultyDoc = await getDoc(facultyRef);
+
+        if (facultyDoc.exists()) {
+          const facultyData = facultyDoc.data();
+          const facultyAssignments = facultyData.assignedStudents || [];
+
+          // Only filter if there are assignments
+          if (facultyAssignments.length > 0) {
+            finalStudents = finalStudents.filter(student => {
+              // Check if this student matches any of the faculty's assignments
+              return facultyAssignments.some(assignment => {
+                // Match on academic year
+                if (assignment.academicYear !== ay) return false;
+
+                // If grade is specified, it must match
+                if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+
+                // If batch is specified, it must match
+                if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+
+                return true;
+              });
+            });
+          }
+        }
       }
 
       return finalStudents;

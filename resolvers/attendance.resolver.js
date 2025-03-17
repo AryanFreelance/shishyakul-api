@@ -74,8 +74,55 @@ const attendanceResolver = {
   Mutation: {
     attendanceHandler: async (
       _,
-      { ay, grade, timestamp, date, present, absent }
+      { ay, grade, timestamp, date, present, absent, facultyId }
     ) => {
+      // If facultyId is provided, verify that each student in present and absent arrays
+      // is assigned to this faculty member
+      if (facultyId) {
+        // Get faculty assignments
+        const facultyRef = doc(db, "faculties", facultyId);
+        const facultyDoc = await getDoc(facultyRef);
+
+        if (facultyDoc.exists()) {
+          const facultyData = facultyDoc.data();
+          const facultyAssignments = facultyData.assignedStudents || [];
+
+          // If the faculty has assignments, filter the students
+          if (facultyAssignments.length > 0) {
+            // Get all students in this grade and academic year
+            const studentRef = ref(database, `studs/${ay}/${grade}`);
+            const snapshot = await get(studentRef);
+
+            if (snapshot.exists()) {
+              const studentsData = snapshot.val();
+              const allStudents = Object.values(studentsData);
+
+              // Filter to only include students assigned to this faculty
+              const assignedStudentIds = allStudents
+                .filter(student => {
+                  return facultyAssignments.some(assignment => {
+                    // Match on academic year
+                    if (assignment.academicYear !== ay) return false;
+
+                    // If grade is specified, it must match
+                    if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+
+                    // If batch is specified, it must match
+                    if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+
+                    return true;
+                  });
+                })
+                .map(student => student.userId);
+
+              // Filter present and absent arrays to only include assigned students
+              present = present.filter(studentId => assignedStudentIds.includes(studentId));
+              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+            }
+          }
+        }
+      }
+
       // If the attendance data is already available then just update it else create a new attendance record for the specified timestamp.
       let attendanceData = {};
       let isExists = false;
@@ -248,7 +295,64 @@ const attendanceResolver = {
       }
       return "SUCCESS";
     },
-    updateAttendance: async (_, { timestamp, present, absent }) => {
+    updateAttendance: async (_, { timestamp, present, absent, facultyId }) => {
+      // If facultyId is provided, verify that each student in present and absent arrays
+      // is assigned to this faculty member
+      if (facultyId) {
+        // First, get the academic year and grade from the existing attendance record
+        const prevData = await getDoc(doc(db, "attendance", timestamp));
+        if (!prevData.exists()) {
+          throw new Error("Attendance record not found");
+        }
+
+        const prevAttendanceData = prevData.data();
+        const ay = prevAttendanceData.ay;
+        const grade = prevAttendanceData.grade;
+
+        // Get faculty assignments
+        const facultyRef = doc(db, "faculties", facultyId);
+        const facultyDoc = await getDoc(facultyRef);
+
+        if (facultyDoc.exists()) {
+          const facultyData = facultyDoc.data();
+          const facultyAssignments = facultyData.assignedStudents || [];
+
+          // If the faculty has assignments, filter the students
+          if (facultyAssignments.length > 0) {
+            // Get all students in this grade and academic year
+            const studentRef = ref(database, `studs/${ay}/${grade}`);
+            const snapshot = await get(studentRef);
+
+            if (snapshot.exists()) {
+              const studentsData = snapshot.val();
+              const allStudents = Object.values(studentsData);
+
+              // Filter to only include students assigned to this faculty
+              const assignedStudentIds = allStudents
+                .filter(student => {
+                  return facultyAssignments.some(assignment => {
+                    // Match on academic year
+                    if (assignment.academicYear !== ay) return false;
+
+                    // If grade is specified, it must match
+                    if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+
+                    // If batch is specified, it must match
+                    if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+
+                    return true;
+                  });
+                })
+                .map(student => student.userId);
+
+              // Filter present and absent arrays to only include assigned students
+              present = present.filter(studentId => assignedStudentIds.includes(studentId));
+              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+            }
+          }
+        }
+      }
+
       const prevData = await getDoc(doc(db, "attendance", timestamp));
       const attendance = {
         ...prevData.data(),
