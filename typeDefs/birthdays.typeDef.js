@@ -1,6 +1,6 @@
 const birthdaysTypeDef = `#graphql
 type Birthday {
-  userId: ID!
+  userId: ID
   firstname: String
   lastname: String
   dob: String
@@ -24,7 +24,7 @@ type Query {
 }
 
 type Mutation {
-  updateBirthdayNotification(userId: ID!, notificationSent: Boolean!): String
+  updateBirthdayNotification(userId: ID, notificationSent: Boolean): String
 }
 `;
 

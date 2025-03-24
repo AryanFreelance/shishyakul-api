@@ -16,44 +16,74 @@ import { child, get, ref as refDB } from "firebase/database";
 
 const testPaperResolver = {
   Query: {
-    testpapers: async () => {
-      const testPapers = { published: [], draft: [] };
-      const testPapersCollection = collection(db, "testPapers");
-      const testPapersSnapshot = await getDocs(testPapersCollection);
-      testPapersSnapshot.forEach((doc) => {
-        testPapers.published.push(doc.data());
-      });
-      const testPapersDraftCollection = collection(db, "testPapersDraft");
-      const testPapersDraftSnapshot = await getDocs(testPapersDraftCollection);
-      testPapersDraftSnapshot.forEach((doc) => {
-        testPapers.draft.push(doc.data());
-      });
-      return testPapers;
-    },
-    facultyTestpapers: async (_, { createdBy, published }) => {
-      // If published is true, return only published tests
-      // If published is false, return only draft tests
-      const testPaperResults = [];
+    testpapers: async (_, { facultyId, isAdmin }) => {
+      try {
+        const draftPapers = [];
+        const publishedPapers = [];
 
-      if (published) {
-        // Get published test papers
-        const testPapersCollection = collection(db, "testPapers");
-        const publishedQuery = firestoreQuery(testPapersCollection, where("createdBy", "==", createdBy));
-        const testPapersSnapshot = await getDocs(publishedQuery);
-        testPapersSnapshot.forEach((doc) => {
-          testPaperResults.push(doc.data());
-        });
-      } else {
-        // Get draft test papers
-        const testPapersDraftCollection = collection(db, "testPapersDraft");
-        const draftQuery = firestoreQuery(testPapersDraftCollection, where("createdBy", "==", createdBy));
-        const testPapersDraftSnapshot = await getDocs(draftQuery);
-        testPapersDraftSnapshot.forEach((doc) => {
-          testPaperResults.push(doc.data());
-        });
+        if (isAdmin) {
+          // For admin, get all test papers
+          const draftSnapshot = await getDocs(collection(db, "testPapersDraft"));
+          const publishedSnapshot = await getDocs(collection(db, "testPapers"));
+
+          draftSnapshot.forEach((doc) => {
+            draftPapers.push({ id: doc.id, ...doc.data() });
+          });
+
+          publishedSnapshot.forEach((doc) => {
+            publishedPapers.push({ id: doc.id, ...doc.data() });
+          });
+        } else if (facultyId) {
+          // For faculty, get their specific test papers
+          const facultyTestPapersRef = collection(db, "faculties", facultyId, "testpapers");
+          const facultySnapshot = await getDocs(facultyTestPapersRef);
+
+          facultySnapshot.forEach((doc) => {
+            const paperData = doc.data();
+            if (paperData.published) {
+              publishedPapers.push({ id: doc.id, ...paperData });
+            } else {
+              draftPapers.push({ id: doc.id, ...paperData });
+            }
+          });
+        }
+
+        // Sort by createdAt in descending order
+        draftPapers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        publishedPapers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        return {
+          draft: draftPapers,
+          published: publishedPapers,
+        };
+      } catch (error) {
+        console.error("Error fetching test papers:", error);
+        throw new Error("Error fetching test papers");
       }
+    },
+    facultyTestpapers: async (_, { facultyId }) => {
+      try {
+        const testPapers = { published: [], draft: [] };
 
-      return testPaperResults;
+        // Get test papers from faculty subcollection
+        const facultyTestPapersCollection = collection(db, "faculties", facultyId, "testpapers");
+        const facultyTestPapersSnapshot = await getDocs(facultyTestPapersCollection);
+
+        // Sort test papers into published and draft
+        facultyTestPapersSnapshot.forEach((doc) => {
+          const paperData = doc.data();
+          if (paperData.published) {
+            testPapers.published.push(paperData);
+          } else {
+            testPapers.draft.push(paperData);
+          }
+        });
+
+        return testPapers;
+      } catch (error) {
+        console.error("Error fetching faculty test papers:", error);
+        return { published: [], draft: [] };
+      }
     },
     allFacultyTestpapers: async () => {
       const result = [];
@@ -232,10 +262,20 @@ const testPaperResolver = {
     },
   },
   Mutation: {
-    createTest: async (_, { id, title, subject, date, totalMarks, url, createdBy, creatorName }) => {
+    createTest: async (_, { id, title, subject, date, totalMarks, url, createdBy, creatorName, facultyId }) => {
       try {
-        await setDoc(doc(db, "testPapersDraft", id), {
-          id,
+        // Generate a clean document ID based on date and title
+        const cleanTitle = title
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-'); // Replace spaces with hyphens
+
+        const formattedDate = date.replace(/-/g, ''); // Remove hyphens from date
+        const documentId = `${formattedDate}-${cleanTitle}`;
+
+        // Create the test paper data object
+        const testPaperData = {
+          id: documentId,
           title,
           subject,
           date,
@@ -245,10 +285,23 @@ const testPaperResolver = {
           published: false,
           createdBy: createdBy || null,
           creatorName: creatorName || null,
-        });
+          sharedWith: [],
+        };
+
+        // Save to testPapersDraft collection
+        await setDoc(doc(db, "testPapersDraft", documentId), testPaperData);
+
+        // If created by a faculty, also save to faculty subcollection
+        if (facultyId) {
+          // Create subcollection path: faculties/[facultyId]/testpapers/[documentId]
+          const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", documentId);
+          await setDoc(facultyTestPaperRef, testPaperData);
+        }
+
         return "Test Created Successfully";
       } catch (error) {
-        return `Error creating test ${JSON.stringify(error)}`;
+        console.error("Error creating test paper:", error);
+        throw new Error(`Error creating test: ${error.message}`);
       }
     },
     updateDraftTest: async (_, { id, title, subject, date, totalMarks }) => {
@@ -330,11 +383,15 @@ const testPaperResolver = {
       const paper = await getDoc(doc(db, "testPapersDraft", id)).then((doc) => {
         return doc.data();
       });
-      await setDoc(doc(db, "testPapers", id), {
+
+      const updatedPaper = {
         ...paper,
         published: true,
         sharedWith: [],
-      })
+      };
+
+      // Publish in main collection
+      await setDoc(doc(db, "testPapers", id), updatedPaper)
         .then(() => {
           // console.log("Document successfully written!");
         })
@@ -343,6 +400,7 @@ const testPaperResolver = {
           return "ERROR";
         });
 
+      // Delete from draft collection
       await deleteDoc(doc(db, "testPapersDraft", id))
         .then(() => {
           // console.log("Document successfully deleted!");
@@ -351,6 +409,28 @@ const testPaperResolver = {
           // console.error("Error deleting document: ", error);
           return "ERROR";
         });
+
+      // Update in faculty subcollection if applicable
+      if (paper.createdBy && paper.createdBy !== "admin@shishyakul.in") {
+        try {
+          // Find faculty ID from email
+          const membersRef = collection(db, "members");
+          const q = firestoreQuery(membersRef, where("email", "==", paper.createdBy));
+          const memberSnapshot = await getDocs(q);
+
+          if (!memberSnapshot.empty) {
+            const facultyId = memberSnapshot.docs[0].data().uid;
+
+            // Update in faculty subcollection
+            const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", id);
+            await updateDoc(facultyTestPaperRef, { published: true });
+          }
+        } catch (error) {
+          console.error("Error updating faculty test paper:", error);
+          // Continue execution even if faculty update fails
+        }
+      }
+
       return "SUCCESS";
     },
     updateSharedTest: async (_, { id, sharedWith }) => {
@@ -542,6 +622,48 @@ const testPaperResolver = {
         return "ERROR";
       });
       return "SUCCESS";
+    },
+    updateTestAttendance: async (_, { id, present, absent, attendanceDate }) => {
+      try {
+        // Get the test paper document
+        const testPaperRef = doc(db, "testPapers", id);
+        const testPaperDoc = await getDoc(testPaperRef);
+
+        if (!testPaperDoc.exists()) {
+          throw new Error("Test paper not found");
+        }
+
+        // Update the attendance data
+        await updateDoc(testPaperRef, {
+          present: present || [],
+          absent: absent || [],
+          attendanceDate: attendanceDate || new Date().toISOString(),
+        });
+
+        // If it's a faculty test paper, also update in the faculty subcollection
+        const testPaperData = testPaperDoc.data();
+        if (testPaperData.createdBy && testPaperData.createdBy !== "admin@shishyakul.in") {
+          // Find faculty ID from email
+          const membersRef = collection(db, "members");
+          const q = firestoreQuery(membersRef, where("email", "==", testPaperData.createdBy));
+          const memberSnapshot = await getDocs(q);
+
+          if (!memberSnapshot.empty) {
+            const facultyId = memberSnapshot.docs[0].data().uid;
+            const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", id);
+            await updateDoc(facultyTestPaperRef, {
+              present: present || [],
+              absent: absent || [],
+              attendanceDate: attendanceDate || new Date().toISOString(),
+            });
+          }
+        }
+
+        return "Attendance updated successfully";
+      } catch (error) {
+        console.error("Error updating test attendance:", error);
+        throw new Error("Error updating test attendance");
+      }
     },
   },
 };

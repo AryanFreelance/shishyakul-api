@@ -28,49 +28,32 @@ const studentResolver = {
       if (!student.exists()) return null;
       return student.data();
     },
-    students: async (_, { ay, grade }) => {
-      // Get the students for the specified academic year, and if the grade is not undefined then get the students from the specific ay and grade
-      let studentData,
-        finalStudents = [];
-      let studentRef;
+    students: async (_, { ay, grade, batch }) => {
+      try {
+        const studentsRef = collection(db, "studs");
+        const querySnapshot = await getDocs(studentsRef);
+        let students = [];
 
-      studentRef = ref(database, "studs/" + ay + "/" + grade);
-      if (!grade) {
-        studentRef = ref(database, "studs/" + ay);
-      }
-
-      await get(studentRef)
-        .then((snapshot) => {
-          if (!snapshot.exists()) {
-            return "NO SNAPSHOT EXISTS";
-          }
-          studentData = snapshot.val();
-        })
-        .catch((error) => {
-          // console.log("ERROR WHILE FETCHING STUDENT DATA", error);
-          return "ERROR";
-        });
-
-      if (!studentData) return null;
-
-      if (grade && studentData) {
-        finalStudents = Object.values(studentData);
-      }
-
-      if (!grade) {
-        const grades = ["8", "9", "10", "11", "12"];
-
-        grades.forEach((grade) => {
+        querySnapshot.forEach((doc) => {
+          const studentData = doc.data();
+          // Filter by academic year, grade, and batch if provided
           if (
-            studentData[grade] &&
-            Object.values(studentData[grade]).length > 0
+            (!ay || studentData.ay === ay) &&
+            (!grade || studentData.grade === grade) &&
+            (!batch || studentData.batch === batch)
           ) {
-            finalStudents.push(...Object.values(studentData[grade]));
+            students.push({
+              userId: doc.id,
+              ...studentData,
+            });
           }
         });
-      }
 
-      return finalStudents;
+        return students;
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        return [];
+      }
     },
     ayStudents: async (_, { ay }) => {
       let studentData,

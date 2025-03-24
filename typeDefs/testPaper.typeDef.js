@@ -6,17 +6,15 @@ type TestPaper {
     date: String
     totalMarks: Int
     url: String
-    sharedWith: [TestSharedWith]
     createdAt: String
     published: Boolean
-    lockShareWith: Boolean
-    marks: [Marks]
-    attendance: TestPaperAttendance
-    present: [ID]
-    absent: [ID]
-    attendanceDate: String
     createdBy: String
     creatorName: String
+    sharedWith: [SharedWith]
+    lockShareWith: Boolean
+    present: [String]
+    absent: [String]
+    attendanceDate: String
 }
 
 type TestPaperAttendance {
@@ -26,14 +24,14 @@ type TestPaperAttendance {
 }
 
 type Query {
-    testpapers: TestPapersOutput
+    testpapers(facultyId: ID, isAdmin: Boolean): TestPapers
     testpaper(id: ID, published: Boolean): TestPaper
     testpaperUsers(ay: String, grade: String, id: ID): [TestPaperUser]
     testpaperMarks(id: ID): [Marks]
     testAccessedUsers(id: ID): [StudentCopy]
     testpaperAttendanceStudents(id: ID): [TestPaperAttendanceStudents]
-    facultyTestpapers(createdBy: String, published: Boolean): [TestPaper]
-    allFacultyTestpapers: [FacultyTestPapers]
+    facultyTestpapers(facultyId: ID): FacultyTestPapers
+    allFacultyTestpapers: [AllFacultyTestPapers]
 }
 
 type FacultyTestPapers {
@@ -54,7 +52,13 @@ type TestPaperAttendanceStudents {
     marks: [Marks]
 }
 
-type TestSharedWith {
+type SharedWith {
+    academicYear: String
+    grade: String
+    batch: String
+}
+
+input SharedWithInput {
     academicYear: String
     grade: String
     batch: String
@@ -83,9 +87,15 @@ type StudentCopy {
     grade: String
 }
 
-type TestPapersOutput {
+type TestPapers {
     published: [TestPaper]
     draft: [TestPaper]
+}
+
+type AllFacultyTestPapers {
+    facultyEmail: String
+    facultyName: String
+    testpapers: [TestPaper]
 }
 
 type Marks {
@@ -99,56 +109,71 @@ type Marks {
 
 type Mutation {
     createTest(
-        id: ID,
-        title: String,
-        subject: String,
-        date: String,
-        totalMarks: Int,
-        url: String,
-        createdBy: String,
+        id: ID
+        title: String
+        subject: String
+        date: String
+        totalMarks: Int
+        url: String
+        createdBy: String
         creatorName: String
+        facultyId: ID
     ): String
-    updateDraftTest(
-        id: ID,
-        title: String,
-        subject: String,
-        date: String,
-        totalMarks: Int,
+    updateTest(
+        id: ID
+        title: String
+        subject: String
+        date: String
+        totalMarks: Int
+        url: String
+        published: Boolean
+        createdBy: String
+        creatorName: String
     ): String
     updateFacultyTest(
-        id: ID,
-        title: String,
-        subject: String,
-        date: String,
-        totalMarks: Int,
-        url: String,
-        published: Boolean,
-        createdBy: String,
+        id: ID
+        title: String
+        subject: String
+        date: String
+        totalMarks: Int
+        url: String
+        published: Boolean
+        createdBy: String
         creatorName: String
     ): String
-    publishTestPaper(
-        id: ID,
+    publishTestPaper(id: ID): String
+    deleteTestPaper(id: ID, published: Boolean): String
+    deleteTest(id: ID, published: Boolean): String
+    updateSharedWith(id: ID, sharedWith: [SharedWithInput]): String
+    updateSharedTest(id: ID, sharedWith: [SharedWithInput]): String
+    updateTestAttendance(
+        id: ID
+        present: [String]
+        absent: [String]
+        attendanceDate: String
     ): String
-    updateSharedTest(
-        id: ID,
-        sharedWith: [TestSharedWithInp]
+    updateDraftTest(
+        id: ID
+        title: String
+        subject: String
+        date: String
+        totalMarks: Int
     ): String
     lockSharedWithTest(
-        id: ID,
+        id: ID
         lockShareWith: Boolean
     ): String
     testAttendanceHandler(
-        id: ID,
-        date: String,
-        present: [ID],
-        absent: [ID],
+        id: ID
+        date: String
+        present: [ID]
+        absent: [ID]
         facultyId: ID
     ): String
     addMarks (
-        testId: ID,
+        testId: ID
         data: [MarksInput]
     ): String
-    deleteTest(id: ID, published: Boolean): String
 }
 
 input MarksInput {
