@@ -30,26 +30,78 @@ const studentResolver = {
     },
     students: async (_, { ay, grade, batch }) => {
       try {
-        const studentsRef = collection(db, "studs");
-        const querySnapshot = await getDocs(studentsRef);
-        let students = [];
+        let studentData = {};
+        let finalStudents = [];
 
-        querySnapshot.forEach((doc) => {
-          const studentData = doc.data();
-          // Filter by academic year, grade, and batch if provided
-          if (
-            (!ay || studentData.ay === ay) &&
-            (!grade || studentData.grade === grade) &&
-            (!batch || studentData.batch === batch)
-          ) {
-            students.push({
-              userId: doc.id,
-              ...studentData,
+        // Path construction based on provided filters
+        let path = "studs";
+        if (ay) {
+          path += `/${ay}`;
+          if (grade) {
+            path += `/${grade}`;
+          }
+        }
+
+        const studentRef = ref(database, path);
+        await get(studentRef)
+          .then((snapshot) => {
+            if (!snapshot.exists()) {
+              return finalStudents;
+            }
+            studentData = snapshot.val();
+          })
+          .catch((error) => {
+            console.error("Error while fetching student data:", error);
+            return finalStudents;
+          });
+
+        // Process the data based on the path level
+        if (ay && grade) {
+          // If both ay and grade specified, we're at students level
+          if (studentData) {
+            Object.values(studentData).forEach((student) => {
+              if (!batch || student.batch === batch) {
+                finalStudents.push(student);
+              }
             });
           }
-        });
+        } else if (ay) {
+          // If only ay specified, we need to iterate through grades
+          const grades = Object.keys(studentData || {});
+          grades.forEach((gradeKey) => {
+            if (!grade || gradeKey === grade) {
+              const gradeStudents = Object.values(studentData[gradeKey] || {});
+              gradeStudents.forEach((student) => {
+                if (!batch || student.batch === batch) {
+                  finalStudents.push(student);
+                }
+              });
+            }
+          });
+        } else {
+          // If no filters, we need to iterate through academic years and grades
+          const academicYears = Object.keys(studentData || {});
+          academicYears.forEach((yearKey) => {
+            if (!ay || yearKey === ay) {
+              const grades = Object.keys(studentData[yearKey] || {});
+              grades.forEach((gradeKey) => {
+                if (!grade || gradeKey === grade) {
+                  const gradeStudents = Object.values(
+                    studentData[yearKey][gradeKey] || {}
+                  );
+                  gradeStudents.forEach((student) => {
+                    if (!batch || student.batch === batch) {
+                      finalStudents.push(student);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
 
-        return students;
+        console.log("STUDENTS", finalStudents);
+        return finalStudents;
       } catch (error) {
         console.error("Error fetching students:", error);
         return [];
@@ -118,17 +170,27 @@ const studentResolver = {
 
           // Only filter if there are assignments
           if (facultyAssignments.length > 0) {
-            finalStudents = finalStudents.filter(student => {
+            finalStudents = finalStudents.filter((student) => {
               // Check if this student matches any of the faculty's assignments
-              return facultyAssignments.some(assignment => {
+              return facultyAssignments.some((assignment) => {
                 // Match on academic year
                 if (assignment.academicYear !== ay) return false;
 
                 // If grade is specified, it must match
-                if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+                if (
+                  assignment.grade &&
+                  assignment.grade !== "all" &&
+                  assignment.grade !== student.grade
+                )
+                  return false;
 
                 // If batch is specified, it must match
-                if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+                if (
+                  assignment.batch &&
+                  assignment.batch !== "all" &&
+                  assignment.batch !== student.batch
+                )
+                  return false;
 
                 return true;
               });
@@ -189,7 +251,7 @@ const studentResolver = {
         console.error("Error fetching student academic years:", error);
         return [];
       }
-    }
+    },
   },
   Mutation: {
     initializeStudent: async (_, { email }) => {
@@ -377,7 +439,10 @@ const studentResolver = {
             ref(database, `studs/${newAy}/${data.grade}/${userId}`),
             newData
           ).catch((error) => {
-            console.error("ERROR WHILE CREATING NEW ACADEMIC YEAR ENTRY", error);
+            console.error(
+              "ERROR WHILE CREATING NEW ACADEMIC YEAR ENTRY",
+              error
+            );
             return "ERROR";
           });
 
@@ -471,17 +536,13 @@ const studentResolver = {
         const imageName =
           mode === "cheque"
             ? chequeImgUrl
-              ?.split("/")
-              .slice(-1)[0]
-              .split("?")[0]
-              .substring(6, 16)
-            : mode === "upi"
-              ? upiImgUrl
                 ?.split("/")
                 .slice(-1)[0]
                 .split("?")[0]
                 .substring(6, 16)
-              : null;
+            : mode === "upi"
+            ? upiImgUrl?.split("/").slice(-1)[0].split("?")[0].substring(6, 16)
+            : null;
         if (imageName) {
           deleteObjectFromStorage(`fee/${imageName}`);
         }
@@ -505,11 +566,13 @@ const studentResolver = {
         return "SUCCESS_FULL_DELETE";
       } else {
         // Update the academicYearsHistory to remove the current academic year
-        const updatedAcademicYears = academicYearsHistory.filter(year => year !== ay);
+        const updatedAcademicYears = academicYearsHistory.filter(
+          (year) => year !== ay
+        );
 
         await updateDoc(doc(db, "studs", userId), {
-          academicYearsHistory: updatedAcademicYears
-        }).catch(error => {
+          academicYearsHistory: updatedAcademicYears,
+        }).catch((error) => {
           console.error("ERROR WHILE UPDATING ACADEMIC YEARS", error);
           return "ERROR";
         });
@@ -524,9 +587,16 @@ const studentResolver = {
         const studentFees = [];
         // Get current academic year fees
         const currentAy = parent.ay;
-        const feeCollection = currentAy ? currentAy.replace("-", "_") : "current";
+        const feeCollection = currentAy
+          ? currentAy.replace("-", "_")
+          : "current";
 
-        const feesCollection = collection(db, "fees", parent.userId, feeCollection);
+        const feesCollection = collection(
+          db,
+          "fees",
+          parent.userId,
+          feeCollection
+        );
         const feesSnapshot = await getDocs(feesCollection);
 
         feesSnapshot.forEach((doc) => {
@@ -549,7 +619,7 @@ const studentResolver = {
         console.error("Error fetching academic years history:", error);
         return [parent.ay];
       }
-    }
+    },
   },
 };
 

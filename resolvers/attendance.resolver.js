@@ -99,25 +99,39 @@ const attendanceResolver = {
 
               // Filter to only include students assigned to this faculty
               const assignedStudentIds = allStudents
-                .filter(student => {
-                  return facultyAssignments.some(assignment => {
+                .filter((student) => {
+                  return facultyAssignments.some((assignment) => {
                     // Match on academic year
                     if (assignment.academicYear !== ay) return false;
 
                     // If grade is specified, it must match
-                    if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+                    if (
+                      assignment.grade &&
+                      assignment.grade !== "all" &&
+                      assignment.grade !== student.grade
+                    )
+                      return false;
 
                     // If batch is specified, it must match
-                    if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+                    if (
+                      assignment.batch &&
+                      assignment.batch !== "all" &&
+                      assignment.batch !== student.batch
+                    )
+                      return false;
 
                     return true;
                   });
                 })
-                .map(student => student.userId);
+                .map((student) => student.userId);
 
               // Filter present and absent arrays to only include assigned students
-              present = present.filter(studentId => assignedStudentIds.includes(studentId));
-              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+              present = present.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
+              absent = absent.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
             }
           }
         }
@@ -329,25 +343,39 @@ const attendanceResolver = {
 
               // Filter to only include students assigned to this faculty
               const assignedStudentIds = allStudents
-                .filter(student => {
-                  return facultyAssignments.some(assignment => {
+                .filter((student) => {
+                  return facultyAssignments.some((assignment) => {
                     // Match on academic year
                     if (assignment.academicYear !== ay) return false;
 
                     // If grade is specified, it must match
-                    if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+                    if (
+                      assignment.grade &&
+                      assignment.grade !== "all" &&
+                      assignment.grade !== student.grade
+                    )
+                      return false;
 
                     // If batch is specified, it must match
-                    if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+                    if (
+                      assignment.batch &&
+                      assignment.batch !== "all" &&
+                      assignment.batch !== student.batch
+                    )
+                      return false;
 
                     return true;
                   });
                 })
-                .map(student => student.userId);
+                .map((student) => student.userId);
 
               // Filter present and absent arrays to only include assigned students
-              present = present.filter(studentId => assignedStudentIds.includes(studentId));
-              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+              present = present.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
+              absent = absent.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
             }
           }
         }
