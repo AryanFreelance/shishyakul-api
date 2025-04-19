@@ -139,7 +139,7 @@ const attendanceResolver = {
 
       // If the attendance data is already available then just update it else create a new attendance record for the specified timestamp.
       let attendanceData = {};
-      let isExists = false;
+      let isExists = null;
 
       console.log("AY", ay);
       console.log("GRADE", grade);
@@ -170,15 +170,7 @@ const attendanceResolver = {
 
       console.log("UPDATED TIMESTAMP FORMAT", updatedTimestampFormat);
 
-      if (
-        !attendanceSnapshot || // Add check for undefined attendanceSnapshot
-        !attendanceSnapshot[updatedTimestampFormat] ||
-        attendanceSnapshot[updatedTimestampFormat] === undefined ||
-        attendanceSnapshot[updatedTimestampFormat] === null ||
-        (attendanceSnapshot[updatedTimestampFormat] &&
-          attendanceSnapshot[updatedTimestampFormat].ay === ay &&
-          attendanceSnapshot[updatedTimestampFormat].grade === grade)
-      ) {
+      if (attendanceSnapshot[updatedTimestampFormat]) {
         attendanceData = {
           ...(attendanceSnapshot && attendanceSnapshot[updatedTimestampFormat]
             ? attendanceSnapshot[updatedTimestampFormat]
@@ -197,7 +189,9 @@ const attendanceResolver = {
           createdAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
           updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         };
+        isExists = false;
       }
+      console.log("IS EXISTS", isExists);
       // console.log("ATTTENDANCE DATA", attendanceData);
 
       // Check if the attendance data of a particular grade students is of more than 60 days, if yes then delete the attendance data for one date and add the new one to keep the data for only 60 days
@@ -229,6 +223,7 @@ const attendanceResolver = {
       // });
 
       if (isExists) {
+        console.log("UPDATING");
         // If the attendance record exists then update the record and then update the student's attendance records, just like done in the updateAttendance mutation
         await update(
           ref(database, `attendance/${ay}/${grade}/${updatedTimestampFormat}`),
@@ -295,6 +290,7 @@ const attendanceResolver = {
             // console.log(error);
           });
       } else {
+        console.log("CREATING");
         // If the attendance record is not present then create a new record of the attendance
         await set(
           ref(database, `attendance/${ay}/${grade}/${updatedTimestampFormat}`),
