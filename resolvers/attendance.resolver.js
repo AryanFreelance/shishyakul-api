@@ -141,6 +141,14 @@ const attendanceResolver = {
       let attendanceData = {};
       let isExists = false;
 
+      console.log("AY", ay);
+      console.log("GRADE", grade);
+      console.log("TIMESTAMP", timestamp);
+      console.log("DATE", date);
+      console.log("PRESENT", present);
+      console.log("ABSENT", absent);
+      console.log("FACULTY ID", facultyId);
+
       const attendanceSnapshot = await get(
         child(ref(database), `attendance/${ay}/${grade}`)
       )
@@ -150,15 +158,31 @@ const attendanceResolver = {
             return snapshot.val();
           } else {
             // console.log("No data available");
+            return {}; // Return empty object when no data exists
           }
         })
         .catch((error) => {
           console.error(error);
+          return {}; // Return empty object on error
         });
 
-      if (attendanceSnapshot[timestamp]) {
+      const updatedTimestampFormat = moment(timestamp).format("YYYY-MM-DD");
+
+      console.log("UPDATED TIMESTAMP FORMAT", updatedTimestampFormat);
+
+      if (
+        !attendanceSnapshot || // Add check for undefined attendanceSnapshot
+        !attendanceSnapshot[updatedTimestampFormat] ||
+        attendanceSnapshot[updatedTimestampFormat] === undefined ||
+        attendanceSnapshot[updatedTimestampFormat] === null ||
+        (attendanceSnapshot[updatedTimestampFormat] &&
+          attendanceSnapshot[updatedTimestampFormat].ay === ay &&
+          attendanceSnapshot[updatedTimestampFormat].grade === grade)
+      ) {
         attendanceData = {
-          ...attendanceSnapshot[timestamp],
+          ...(attendanceSnapshot && attendanceSnapshot[updatedTimestampFormat]
+            ? attendanceSnapshot[updatedTimestampFormat]
+            : {}),
           present,
           absent,
           updatedAt: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
@@ -207,14 +231,16 @@ const attendanceResolver = {
       if (isExists) {
         // If the attendance record exists then update the record and then update the student's attendance records, just like done in the updateAttendance mutation
         await update(
-          ref(database, `attendance/${ay}/${grade}/${timestamp}`),
+          ref(database, `attendance/${ay}/${grade}/${updatedTimestampFormat}`),
           attendanceData
         )
           .then(() => {
             // Get NewPresent & NewAbsent
-            let prevAttendanceData = attendanceSnapshot[timestamp];
+            let prevAttendanceData = attendanceSnapshot[
+              updatedTimestampFormat
+            ] || { present: [], absent: [] };
             // console.log("PREVATTENDANCE", prevAttendanceData);
-            let { present: prevPresent, absent: prevAbsent } =
+            let { present: prevPresent = [], absent: prevAbsent = [] } =
               prevAttendanceData;
 
             let newPresent = present.filter(
@@ -271,7 +297,7 @@ const attendanceResolver = {
       } else {
         // If the attendance record is not present then create a new record of the attendance
         await set(
-          ref(database, `attendance/${ay}/${grade}/${timestamp}`),
+          ref(database, `attendance/${ay}/${grade}/${updatedTimestampFormat}`),
           attendanceData
         );
 
