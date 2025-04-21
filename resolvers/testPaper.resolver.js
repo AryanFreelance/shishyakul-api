@@ -23,7 +23,9 @@ const testPaperResolver = {
 
         if (isAdmin) {
           // For admin, get all test papers
-          const draftSnapshot = await getDocs(collection(db, "testPapersDraft"));
+          const draftSnapshot = await getDocs(
+            collection(db, "testPapersDraft")
+          );
           const publishedSnapshot = await getDocs(collection(db, "testPapers"));
 
           draftSnapshot.forEach((doc) => {
@@ -35,7 +37,12 @@ const testPaperResolver = {
           });
         } else if (facultyId) {
           // For faculty, get their specific test papers
-          const facultyTestPapersRef = collection(db, "faculties", facultyId, "testpapers");
+          const facultyTestPapersRef = collection(
+            db,
+            "faculties",
+            facultyId,
+            "testpapers"
+          );
           const facultySnapshot = await getDocs(facultyTestPapersRef);
 
           facultySnapshot.forEach((doc) => {
@@ -49,8 +56,12 @@ const testPaperResolver = {
         }
 
         // Sort by createdAt in descending order
-        draftPapers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        publishedPapers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        draftPapers.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        publishedPapers.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
 
         return {
           draft: draftPapers,
@@ -66,8 +77,15 @@ const testPaperResolver = {
         const testPapers = { published: [], draft: [] };
 
         // Get test papers from faculty subcollection
-        const facultyTestPapersCollection = collection(db, "faculties", facultyId, "testpapers");
-        const facultyTestPapersSnapshot = await getDocs(facultyTestPapersCollection);
+        const facultyTestPapersCollection = collection(
+          db,
+          "faculties",
+          facultyId,
+          "testpapers"
+        );
+        const facultyTestPapersSnapshot = await getDocs(
+          facultyTestPapersCollection
+        );
 
         // Sort test papers into published and draft
         facultyTestPapersSnapshot.forEach((doc) => {
@@ -88,6 +106,7 @@ const testPaperResolver = {
     allFacultyTestpapers: async () => {
       const result = [];
       const membersMap = {};
+      console.log("allFacultyTestpapers");
 
       const membersCollection = collection(db, "members");
       const membersSnapshot = await getDocs(membersCollection);
@@ -106,8 +125,11 @@ const testPaperResolver = {
           if (!facultyMap[testPaperData.createdBy]) {
             facultyMap[testPaperData.createdBy] = {
               facultyEmail: testPaperData.createdBy,
-              facultyName: testPaperData.creatorName || membersMap[testPaperData.createdBy] || "Unknown",
-              testpapers: []
+              facultyName:
+                testPaperData.creatorName ||
+                membersMap[testPaperData.createdBy] ||
+                "Unknown",
+              testpapers: [],
             };
           }
           facultyMap[testPaperData.createdBy].testpapers.push(testPaperData);
@@ -117,6 +139,8 @@ const testPaperResolver = {
       for (const email in facultyMap) {
         result.push(facultyMap[email]);
       }
+
+      console.log("RESULT", result);
 
       return result;
     },
@@ -262,15 +286,28 @@ const testPaperResolver = {
     },
   },
   Mutation: {
-    createTest: async (_, { id, title, subject, date, totalMarks, url, createdBy, creatorName, facultyId }) => {
+    createTest: async (
+      _,
+      {
+        id,
+        title,
+        subject,
+        date,
+        totalMarks,
+        url,
+        createdBy,
+        creatorName,
+        facultyId,
+      }
+    ) => {
       try {
         // Generate a clean document ID based on date and title
         const cleanTitle = title
           .toLowerCase()
-          .replace(/[^\w\s-]/g, '') // Remove special characters
-          .replace(/\s+/g, '-'); // Replace spaces with hyphens
+          .replace(/[^\w\s-]/g, "") // Remove special characters
+          .replace(/\s+/g, "-"); // Replace spaces with hyphens
 
-        const formattedDate = date.replace(/-/g, ''); // Remove hyphens from date
+        const formattedDate = date.replace(/-/g, ""); // Remove hyphens from date
         const documentId = `${formattedDate}-${cleanTitle}`;
 
         // Create the test paper data object
@@ -294,7 +331,13 @@ const testPaperResolver = {
         // If created by a faculty, also save to faculty subcollection
         if (facultyId) {
           // Create subcollection path: faculties/[facultyId]/testpapers/[documentId]
-          const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", documentId);
+          const facultyTestPaperRef = doc(
+            db,
+            "faculties",
+            facultyId,
+            "testpapers",
+            documentId
+          );
           await setDoc(facultyTestPaperRef, testPaperData);
         }
 
@@ -326,9 +369,24 @@ const testPaperResolver = {
       });
       return "SUCCESS";
     },
-    updateFacultyTest: async (_, { id, title, subject, date, totalMarks, url, published, createdBy, creatorName }) => {
+    updateFacultyTest: async (
+      _,
+      {
+        id,
+        title,
+        subject,
+        date,
+        totalMarks,
+        url,
+        published,
+        createdBy,
+        creatorName,
+      }
+    ) => {
       try {
-        console.log(`Attempting to update faculty test. ID: ${id}, createdBy: ${createdBy}, published: ${published}`);
+        console.log(
+          `Attempting to update faculty test. ID: ${id}, createdBy: ${createdBy}, published: ${published}`
+        );
 
         // Determine if we're updating a draft or published test
         const collectionName = published ? "testPapers" : "testPapersDraft";
@@ -337,16 +395,25 @@ const testPaperResolver = {
         // Get the existing document
         const prevData = await getDoc(doc(db, collectionName, id));
         if (!prevData.exists()) {
-          console.error(`Test paper with ID ${id} not found in ${collectionName}`);
+          console.error(
+            `Test paper with ID ${id} not found in ${collectionName}`
+          );
           return "ERROR";
         }
 
         // Check if the user has permission to edit this test
         const existingData = prevData.data();
-        console.log(`Found test. Current createdBy: ${existingData.createdBy}, Request createdBy: ${createdBy}`);
+        console.log(
+          `Found test. Current createdBy: ${existingData.createdBy}, Request createdBy: ${createdBy}`
+        );
 
-        if (existingData.createdBy !== createdBy && createdBy !== "admin@shishyakul.in") {
-          console.error(`User ${createdBy} does not have permission to edit test ${id}. Test was created by ${existingData.createdBy}`);
+        if (
+          existingData.createdBy !== createdBy &&
+          createdBy !== "admin@shishyakul.in"
+        ) {
+          console.error(
+            `User ${createdBy} does not have permission to edit test ${id}. Test was created by ${existingData.createdBy}`
+          );
           return "PERMISSION_DENIED";
         }
 
@@ -372,7 +439,9 @@ const testPaperResolver = {
 
         // Update the document
         await setDoc(doc(db, collectionName, testPaper.id), testPaper);
-        console.log(`Successfully updated faculty test ${id} in ${collectionName}`);
+        console.log(
+          `Successfully updated faculty test ${id} in ${collectionName}`
+        );
         return "SUCCESS";
       } catch (error) {
         console.error("Error updating faculty test:", error);
@@ -415,14 +484,23 @@ const testPaperResolver = {
         try {
           // Find faculty ID from email
           const membersRef = collection(db, "members");
-          const q = firestoreQuery(membersRef, where("email", "==", paper.createdBy));
+          const q = firestoreQuery(
+            membersRef,
+            where("email", "==", paper.createdBy)
+          );
           const memberSnapshot = await getDocs(q);
 
           if (!memberSnapshot.empty) {
             const facultyId = memberSnapshot.docs[0].data().uid;
 
             // Update in faculty subcollection
-            const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", id);
+            const facultyTestPaperRef = doc(
+              db,
+              "faculties",
+              facultyId,
+              "testpapers",
+              id
+            );
             await updateDoc(facultyTestPaperRef, { published: true });
           }
         } catch (error) {
@@ -461,7 +539,10 @@ const testPaperResolver = {
         });
       return "SUCCESS";
     },
-    testAttendanceHandler: async (_, { id, date, present, absent, facultyId }) => {
+    testAttendanceHandler: async (
+      _,
+      { id, date, present, absent, facultyId }
+    ) => {
       // If facultyId is provided, verify that each student in present and absent arrays
       // is assigned to this faculty member
       if (facultyId) {
@@ -495,7 +576,10 @@ const testPaperResolver = {
                 const { academicYear, grade, batch } = sharing;
 
                 // Get students for this academic year and grade
-                const studentRef = ref(database, `studs/${academicYear}/${grade}`);
+                const studentRef = ref(
+                  database,
+                  `studs/${academicYear}/${grade}`
+                );
                 const snapshot = await get(studentRef);
 
                 if (snapshot.exists()) {
@@ -503,21 +587,35 @@ const testPaperResolver = {
                   const studentsInGrade = Object.values(studentsData);
 
                   // Filter students by batch if specified
-                  const filteredStudents = batch && batch !== "N/A"
-                    ? studentsInGrade.filter(student => student.batch === batch)
-                    : studentsInGrade;
+                  const filteredStudents =
+                    batch && batch !== "N/A"
+                      ? studentsInGrade.filter(
+                          (student) => student.batch === batch
+                        )
+                      : studentsInGrade;
 
                   // Check if each student is assigned to this faculty
-                  filteredStudents.forEach(student => {
-                    const isAssigned = facultyAssignments.some(assignment => {
+                  filteredStudents.forEach((student) => {
+                    const isAssigned = facultyAssignments.some((assignment) => {
                       // Match on academic year
-                      if (assignment.academicYear !== academicYear) return false;
+                      if (assignment.academicYear !== academicYear)
+                        return false;
 
                       // If grade is specified, it must match
-                      if (assignment.grade && assignment.grade !== "all" && assignment.grade !== student.grade) return false;
+                      if (
+                        assignment.grade &&
+                        assignment.grade !== "all" &&
+                        assignment.grade !== student.grade
+                      )
+                        return false;
 
                       // If batch is specified, it must match
-                      if (assignment.batch && assignment.batch !== "all" && assignment.batch !== student.batch) return false;
+                      if (
+                        assignment.batch &&
+                        assignment.batch !== "all" &&
+                        assignment.batch !== student.batch
+                      )
+                        return false;
 
                       return true;
                     });
@@ -530,12 +628,19 @@ const testPaperResolver = {
               }
 
               // Filter present and absent arrays to only include assigned students
-              present = present.filter(studentId => assignedStudentIds.includes(studentId));
-              absent = absent.filter(studentId => assignedStudentIds.includes(studentId));
+              present = present.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
+              absent = absent.filter((studentId) =>
+                assignedStudentIds.includes(studentId)
+              );
             }
           }
         } catch (error) {
-          console.error("Error filtering students by faculty assignment:", error);
+          console.error(
+            "Error filtering students by faculty assignment:",
+            error
+          );
         }
       }
 
@@ -560,10 +665,11 @@ const testPaperResolver = {
       const prevData = await getDoc(doc(db, "testPapers", testId));
 
       const today = new Date();
-      const todayDate = `${today.getFullYear()}-${today.getMonth() + 1 < 10
-        ? "0" + (today.getMonth() + 1)
-        : today.getMonth() + 1
-        }-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
+      const todayDate = `${today.getFullYear()}-${
+        today.getMonth() + 1 < 10
+          ? "0" + (today.getMonth() + 1)
+          : today.getMonth() + 1
+      }-${today.getDate() < 10 ? "0" + today.getDate() : today.getDate()}`;
 
       if (prevData.data().date >= todayDate || !prevData.data().published)
         return "ERROR";
@@ -597,33 +703,79 @@ const testPaperResolver = {
       return "SUCCESS";
     },
     deleteTest: async (_, { id, published }) => {
-      if (published) {
-        await deleteDoc(doc(db, "testPapers", id))
-          .then(() => {
-            // console.log("Document successfully deleted!");
-          })
-          .catch((error) => {
-            // console.error("Error deleting document: ", error);
-            return "ERROR";
-          });
-      } else {
-        await deleteDoc(doc(db, "testPapersDraft", id))
-          .then(() => {
-            // console.log("Document successfully deleted!");
-          })
-          .catch((error) => {
-            // console.error("Error deleting document: ", error);
-            return "ERROR";
-          });
-      }
+      try {
+        // Get the document to check if it's a faculty test paper
+        const collectionName = published ? "testPapers" : "testPapersDraft";
+        const testDoc = await getDoc(doc(db, collectionName, id));
 
-      await deleteObject(ref(storage, `test_papers/${id}`)).catch((error) => {
-        // console.error("Error deleting document: ", error);
+        if (!testDoc.exists()) {
+          console.error(`Test paper ${id} not found in ${collectionName}`);
+          return "ERROR";
+        }
+
+        const testData = testDoc.data();
+
+        // Delete from main collection
+        await deleteDoc(doc(db, collectionName, id));
+
+        // If created by a faculty, also delete from faculty subcollection
+        if (
+          testData.createdBy &&
+          testData.createdBy !== "admin@shishyakul.in"
+        ) {
+          try {
+            // Find faculty ID from email
+            const membersRef = collection(db, "members");
+            const q = firestoreQuery(
+              membersRef,
+              where("email", "==", testData.createdBy)
+            );
+            const memberSnapshot = await getDocs(q);
+
+            if (!memberSnapshot.empty) {
+              const facultyId = memberSnapshot.docs[0].data().uid;
+
+              // Delete from faculty subcollection
+              const facultyTestPaperRef = doc(
+                db,
+                "faculties",
+                facultyId,
+                "testpapers",
+                id
+              );
+              await deleteDoc(facultyTestPaperRef);
+              console.log(
+                `Deleted test paper ${id} from faculty ${facultyId} subcollection`
+              );
+            }
+          } catch (error) {
+            console.error(
+              `Error deleting from faculty subcollection: ${error.message}`
+            );
+            // Continue execution even if faculty deletion fails
+          }
+        }
+
+        // Delete from storage if exists
+        try {
+          const fileRef = ref(storage, `test_papers/${id}`);
+          await deleteObject(fileRef);
+          console.log(`Deleted file from storage: test_papers/${id}`);
+        } catch (error) {
+          // File might not exist, which is fine
+          console.error(`Error deleting file from storage: ${error.message}`);
+        }
+
+        return "SUCCESS";
+      } catch (error) {
+        console.error(`Error in deleteTest: ${error.message}`);
         return "ERROR";
-      });
-      return "SUCCESS";
+      }
     },
-    updateTestAttendance: async (_, { id, present, absent, attendanceDate }) => {
+    updateTestAttendance: async (
+      _,
+      { id, present, absent, attendanceDate }
+    ) => {
       try {
         // Get the test paper document
         const testPaperRef = doc(db, "testPapers", id);
@@ -642,15 +794,27 @@ const testPaperResolver = {
 
         // If it's a faculty test paper, also update in the faculty subcollection
         const testPaperData = testPaperDoc.data();
-        if (testPaperData.createdBy && testPaperData.createdBy !== "admin@shishyakul.in") {
+        if (
+          testPaperData.createdBy &&
+          testPaperData.createdBy !== "admin@shishyakul.in"
+        ) {
           // Find faculty ID from email
           const membersRef = collection(db, "members");
-          const q = firestoreQuery(membersRef, where("email", "==", testPaperData.createdBy));
+          const q = firestoreQuery(
+            membersRef,
+            where("email", "==", testPaperData.createdBy)
+          );
           const memberSnapshot = await getDocs(q);
 
           if (!memberSnapshot.empty) {
             const facultyId = memberSnapshot.docs[0].data().uid;
-            const facultyTestPaperRef = doc(db, "faculties", facultyId, "testpapers", id);
+            const facultyTestPaperRef = doc(
+              db,
+              "faculties",
+              facultyId,
+              "testpapers",
+              id
+            );
             await updateDoc(facultyTestPaperRef, {
               present: present || [],
               absent: absent || [],
